@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_result.dart';
 import '../../../core/api/dio_client.dart';
 import '../../../core/api/paged.dart';
+import '../../../core/db/app_database.dart';
+import '../../../core/db/cache_dao.dart';
+import '../../sync/data/offline_first_repositories.dart';
 import 'product_models.dart';
 
 /// Products (reference-data) repository contract.
@@ -167,8 +170,15 @@ class ProductsRepositoryImpl implements ProductsRepository {
   }
 }
 
-/// Provider exposing the [ProductsRepository] implementation.
+/// Provider exposing the [ProductsRepository].
+///
+/// Wrapped in an offline-first decorator (Dio online + Drift cache fallback,
+/// TZ_04 §1). Tests override this provider directly with a fake, bypassing the
+/// decorator.
 final productsRepositoryProvider = Provider<ProductsRepository>((ref) {
-  final dio = ref.watch(dioProvider);
-  return ProductsRepositoryImpl(dio);
+  final dao = CacheDao(ref.watch(appDatabaseProvider));
+  return OfflineFirstProductsRepository(
+    ProductsRepositoryImpl(ref.watch(dioProvider)),
+    dao,
+  );
 });

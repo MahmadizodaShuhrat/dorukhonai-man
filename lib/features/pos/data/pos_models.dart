@@ -314,6 +314,7 @@ class CartItem {
     required this.quantity,
     required this.unitPrice,
     this.lineDiscount = 0,
+    this.rxRequired = false,
   });
 
   final String productId;
@@ -323,6 +324,11 @@ class CartItem {
   /// Indicative unit price for the on-screen running total only.
   final double unitPrice;
   final double lineDiscount;
+
+  /// Whether the product is prescription-only (`℞`). Indicative flag carried
+  /// from the [Product] so the cart row can show the `℞` badge (TZ_03 §C.2);
+  /// it is not part of the `POST /sales` body.
+  final bool rxRequired;
 
   /// Indicative line total (`quantity * unitPrice - lineDiscount`, never
   /// negative). The server is the source of truth for the booked amount.
@@ -335,6 +341,7 @@ class CartItem {
     double? quantity,
     double? unitPrice,
     double? lineDiscount,
+    bool? rxRequired,
   }) {
     return CartItem(
       productId: productId ?? this.productId,
@@ -342,6 +349,7 @@ class CartItem {
       quantity: quantity ?? this.quantity,
       unitPrice: unitPrice ?? this.unitPrice,
       lineDiscount: lineDiscount ?? this.lineDiscount,
+      rxRequired: rxRequired ?? this.rxRequired,
     );
   }
 

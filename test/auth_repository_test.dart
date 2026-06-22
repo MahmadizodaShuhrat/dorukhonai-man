@@ -65,7 +65,7 @@ void main() {
         },
       }, 200),
     );
-    final dio = Dio(BaseOptions(baseUrl: AppConstants.apiBaseUrl))
+    final dio = Dio(BaseOptions(baseUrl: 'http://localhost:5000/api/v1'))
       ..httpClientAdapter = adapter;
     final repo = AuthRepositoryImpl(dio, TokenStorage());
 
@@ -84,7 +84,7 @@ void main() {
 
   test('401 maps to AuthFailure with the credential message', () async {
     final adapter = _Adapter((_) => _json({'message': 'bad'}, 401));
-    final dio = Dio(BaseOptions(baseUrl: AppConstants.apiBaseUrl))
+    final dio = Dio(BaseOptions(baseUrl: 'http://localhost:5000/api/v1'))
       ..httpClientAdapter = adapter;
     final repo = AuthRepositoryImpl(dio, TokenStorage());
 
@@ -101,7 +101,7 @@ void main() {
     secureData[AppConstants.accessTokenKey] = 'a';
     secureData[AppConstants.refreshTokenKey] = 'r';
     final adapter = _Adapter((_) => _json({'message': 'err'}, 500));
-    final dio = Dio(BaseOptions(baseUrl: AppConstants.apiBaseUrl))
+    final dio = Dio(BaseOptions(baseUrl: 'http://localhost:5000/api/v1'))
       ..httpClientAdapter = adapter;
     final repo = AuthRepositoryImpl(dio, TokenStorage());
 

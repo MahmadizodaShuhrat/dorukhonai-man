@@ -2,8 +2,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_result.dart';
 import '../../products/data/product_models.dart';
+import '../../sync/data/offline_sale_service.dart';
 import '../data/pos_models.dart';
 import '../data/pos_repository.dart';
+
+/// Generates RFC-4122 v4 Guids for offline `clientId`s without an extra
+/// dependency (drift/sqlite is already present but a local generator keeps the
+/// POS layer dependency-light).
+String _newGuid() {
+  final rng = DateTime.now().microsecondsSinceEpoch;
+  final r = (rng * 0x2545F4914F6CDD1D) & 0xFFFFFFFFFFFFFFFF;
+  String hex(int v, int len) =>
+      v.toUnsigned(len * 4).toRadixString(16).padLeft(len, '0');
+  final a = hex(rng & 0xFFFFFFFF, 8);
+  final b = hex((rng >> 16) & 0xFFFF, 4);
+  final c = hex(0x4000 | ((r >> 4) & 0x0FFF), 4);
+  final d = hex(0x8000 | ((r >> 8) & 0x3FFF), 4);
+  final e = hex(r & 0xFFFFFFFFFFFF, 12);
+  return '$a-$b-$c-$d-$e';
+}
 
 /// State of the current cash shift for one branch.
 class CashShiftState {
@@ -189,6 +206,7 @@ class PosCartController extends StateNotifier<CartState> {
           name: product.name,
           quantity: quantity,
           unitPrice: unitPrice,
+          rxRequired: product.rxRequired,
         ),
       );
     }
@@ -261,6 +279,15 @@ class SaleSubmitFailure extends SaleSubmitResult {
   final Failure failure;
 }
 
+/// The server was unreachable, so the sale was recorded OFFLINE: local FEFO
+/// ran from the cache, cached stock was decremented, and the sale is queued in
+/// the outbox under [clientId]. [sale] is a provisional receipt (the server
+/// re-runs FEFO on PUSH). The UI prints it and shows a "pending sync" notice.
+class SaleSubmitPendingOffline extends SaleSubmitResult {
+  const SaleSubmitPendingOffline(this.sale);
+  final Sale sale;
+}
+
 /// Submits the sale and (on success) refreshes the shift so `totalSales`
 /// reflects the new sale. `bool` state = busy flag (mirrors
 /// `ReceiptEditController`).
@@ -285,14 +312,83 @@ class SaleSubmitController extends StateNotifier<bool> {
       payments: payments,
       discount: discount,
     );
-    state = false;
     switch (result) {
       case Success(:final data):
+        state = false;
         // Reflect the sale in the shift's running total.
         await _ref.read(cashShiftControllerProvider.notifier).loadCurrent();
         return SaleSubmitSuccess(data);
       case Error(:final failure):
+        // Network down → record the sale offline (local FEFO + outbox queue).
+        if (failure is NetworkFailure) {
+          final offline = await _recordOffline(
+            shiftState: shiftState,
+            cart: cart,
+            payments: payments,
+            discount: discount,
+          );
+          state = false;
+          return offline;
+        }
+        state = false;
         return SaleSubmitFailure(failure);
+    }
+  }
+
+  /// Falls back to the offline sale path: local FEFO from the cache + outbox
+  /// queue. Returns a provisional [Sale] receipt or a shortfall failure.
+  Future<SaleSubmitResult> _recordOffline({
+    required CashShiftState shiftState,
+    required CartState cart,
+    required List<Payment> payments,
+    required double discount,
+  }) async {
+    final clientId = _newGuid();
+    final createdAt = DateTime.now();
+    final service = _ref.read(offlineSaleServiceProvider);
+    final result = await service.recordSale(
+      clientId: clientId,
+      branchId: shiftState.branchId,
+      items: cart.items,
+      payments: payments,
+      discount: discount,
+      createdAt: createdAt,
+    );
+    switch (result) {
+      case OfflineSaleShortfall(:final productName, :final fefo):
+        return SaleSubmitFailure(
+          ServerFailure(
+            'Бақияи кэш барои "$productName" нарасид '
+            '(дархост ${fefo.requested}, мавҷуд ${fefo.available}).',
+          ),
+        );
+      case OfflineSaleQueued(:final lines, :final subtotal, :final total):
+        final sale = Sale(
+          id: clientId,
+          number: 'OFFLINE',
+          branchId: shiftState.branchId,
+          shiftId: shiftState.shift?.id ?? '',
+          userId: shiftState.shift?.userId ?? '',
+          createdAt: createdAt,
+          lines: [
+            for (final a in lines)
+              SaleLine(
+                id: a.batchId,
+                productId: a.productId,
+                batchId: a.batchId,
+                seriesNumber: a.seriesNumber,
+                quantity: a.quantity,
+                unitPrice: a.unitPrice,
+                lineDiscount: 0,
+                lineTotal: a.lineTotal,
+              ),
+          ],
+          payments: payments,
+          subtotal: subtotal,
+          discount: discount,
+          total: total,
+        );
+        return SaleSubmitPendingOffline(sale);
     }
   }
 

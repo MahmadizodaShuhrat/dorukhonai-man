@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/entity_picker.dart';
+import '../../reference/presentation/reference_providers.dart';
 import '../data/product_models.dart';
 import 'products_provider.dart';
 
 /// Create/edit form for a single [Product] (TZ §3.3). Validation: `name` is
-/// required; `rxRequired` is a toggle; `barcode` and the FK ids
-/// (group/manufacturer/unit) are optional free-text for now (selectors land
-/// once those reference lists exist in the UI).
+/// required; `rxRequired` is a toggle. The FK fields (group/manufacturer/unit)
+/// use an [EntityPicker] dropdown (name → id), replacing the old typed-GUID
+/// `TextField`s (TZ_03 §C.5/P2).
 class ProductFormScreen extends ConsumerStatefulWidget {
   const ProductFormScreen({super.key, this.product});
 
@@ -23,9 +25,11 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
   late final TextEditingController _name;
   late final TextEditingController _barcode;
-  late final TextEditingController _drugGroupId;
-  late final TextEditingController _manufacturerId;
-  late final TextEditingController _unitId;
+
+  // FK selections (ids) — populated via EntityPicker, not typed.
+  String? _drugGroupId;
+  String? _manufacturerId;
+  String? _unitId;
 
   late bool _rxRequired;
   late bool _isActive;
@@ -38,9 +42,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     final p = widget.product;
     _name = TextEditingController(text: p?.name ?? '');
     _barcode = TextEditingController(text: p?.barcode ?? '');
-    _drugGroupId = TextEditingController(text: p?.drugGroupId ?? '');
-    _manufacturerId = TextEditingController(text: p?.manufacturerId ?? '');
-    _unitId = TextEditingController(text: p?.unitId ?? '');
+    _drugGroupId = p?.drugGroupId;
+    _manufacturerId = p?.manufacturerId;
+    _unitId = p?.unitId;
     _rxRequired = p?.rxRequired ?? false;
     _isActive = p?.isActive ?? true;
   }
@@ -49,9 +53,6 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   void dispose() {
     _name.dispose();
     _barcode.dispose();
-    _drugGroupId.dispose();
-    _manufacturerId.dispose();
-    _unitId.dispose();
     super.dispose();
   }
 
@@ -66,9 +67,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       id: widget.product?.id ?? '',
       name: _name.text.trim(),
       barcode: _nullIfEmpty(_barcode.text),
-      drugGroupId: _nullIfEmpty(_drugGroupId.text),
-      manufacturerId: _nullIfEmpty(_manufacturerId.text),
-      unitId: _nullIfEmpty(_unitId.text),
+      drugGroupId: _drugGroupId,
+      manufacturerId: _manufacturerId,
+      unitId: _unitId,
       rxRequired: _rxRequired,
       isActive: _isActive,
     );
@@ -189,31 +190,28 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _drugGroupId,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Гурӯҳи дору (ID)',
-                        prefixIcon: Icon(Icons.category_outlined),
-                      ),
+                    EntityPicker(
+                      label: 'Гурӯҳи дору',
+                      icon: Icons.category_outlined,
+                      optionsProvider: (s) => drugGroupOptionsProvider(s),
+                      selectedId: _drugGroupId,
+                      onChanged: (id) => setState(() => _drugGroupId = id),
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _manufacturerId,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Истеҳсолкунанда (ID)',
-                        prefixIcon: Icon(Icons.factory_outlined),
-                      ),
+                    EntityPicker(
+                      label: 'Истеҳсолкунанда',
+                      icon: Icons.factory_outlined,
+                      optionsProvider: (s) => manufacturerOptionsProvider(s),
+                      selectedId: _manufacturerId,
+                      onChanged: (id) => setState(() => _manufacturerId = id),
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _unitId,
-                      textInputAction: TextInputAction.done,
-                      decoration: const InputDecoration(
-                        labelText: 'Воҳиди ченак (ID)',
-                        prefixIcon: Icon(Icons.straighten),
-                      ),
+                    EntityPicker(
+                      label: 'Воҳиди ченак',
+                      icon: Icons.straighten,
+                      optionsProvider: (s) => unitOptionsProvider(s),
+                      selectedId: _unitId,
+                      onChanged: (id) => setState(() => _unitId = id),
                     ),
                     const SizedBox(height: 8),
                     SwitchListTile(

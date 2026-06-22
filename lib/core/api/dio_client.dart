@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/api_config.dart';
 import '../constants/app_constants.dart';
 import '../storage/token_storage.dart';
 
 /// Builds and configures the application-wide [Dio] instance.
 ///
 /// Responsibilities (TZ §4 / API contract):
-///  - base URL from constants;
+///  - base URL from the configurable [ServerConfig] (TZ_03 §E.8);
 ///  - attach `Authorization: Bearer <token>` on every request;
 ///  - on `401`, transparently refresh the access token via
 ///    `POST /auth/refresh` using the stored refresh token, then retry the
@@ -23,7 +24,12 @@ import '../storage/token_storage.dart';
 ///    request `extra`);
 ///  - concurrent 401s share a single in-flight refresh via [_refreshCompleter].
 class DioClient {
-  DioClient(this._tokenStorage, {this.onForcedLogout, HttpClientAdapter? adapter}) {
+  DioClient(
+    this._tokenStorage, {
+    required this.baseUrl,
+    this.onForcedLogout,
+    HttpClientAdapter? adapter,
+  }) {
     _dio = Dio(_baseOptions());
     // Bare client used ONLY to call /auth/refresh — never carries the auth
     // interceptor, preventing infinite refresh recursion.
@@ -41,6 +47,9 @@ class DioClient {
   /// the auth layer reset its state and route back to login.
   final FutureOr<void> Function()? onForcedLogout;
 
+  /// Fully-qualified API base URL (from [ServerConfig]).
+  final String baseUrl;
+
   final TokenStorage _tokenStorage;
   late final Dio _dio;
   late final Dio _refreshDio;
@@ -55,7 +64,7 @@ class DioClient {
   Dio get dio => _dio;
 
   BaseOptions _baseOptions() => BaseOptions(
-    baseUrl: AppConstants.apiBaseUrl,
+    baseUrl: baseUrl,
     connectTimeout: AppConstants.connectTimeout,
     receiveTimeout: AppConstants.receiveTimeout,
     contentType: 'application/json',
@@ -187,12 +196,16 @@ class DioClient {
 
 /// Provider exposing the configured [Dio] instance to repositories.
 ///
+/// Depends on [serverConfigProvider]: changing the base URL in Settings
+/// rebuilds the client so the new server takes effect on the next request.
 /// The forced-logout callback is wired lazily via [setForcedLogoutHandler] to
 /// avoid a circular dependency between the Dio client and the auth controller.
 final dioClientProvider = Provider<DioClient>((ref) {
   final tokenStorage = ref.watch(tokenStorageProvider);
+  final serverConfig = ref.watch(serverConfigProvider);
   return DioClient(
     tokenStorage,
+    baseUrl: serverConfig.baseUrl,
     onForcedLogout: () => _forcedLogoutHandler?.call(),
   );
 });

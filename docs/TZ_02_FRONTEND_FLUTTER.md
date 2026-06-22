@@ -1,10 +1,19 @@
-# ТЗ — Қисми 2: Frontend (Flutter — Windows desktop)
+# ТЗ — Қисми 2: Frontend (Flutter — Desktop: Windows + macOS)
 
 > Техническое задание барои барномаи мизоҷ (касса/анбор). Дастур аз рӯи ин қадам ба қадам кор мекунад.
-> Алоқа: `TZ_00_TAHLILI_ILOVAGI.md`, `TZ_01_BACKEND_DOTNET.md` (API-и ҳамин ҷо истеъмол мешавад).
+> Алоқа: `TZ_00_TAHLILI_ILOVAGI.md`, `TZ_01_BACKEND_DOTNET.md` (API-и ҳамин ҷо истеъмол мешавад),
+> **`TZ_03_DESKTOP_REDESIGN.md`** ва **`TZ_04_OFFLINE_ARCHITECTURE.md`**.
 
-**Стек:** Flutter (Windows desktop аввал) • Dart • Riverpod • Dio • go_router • Drift (offline)
-**Платформа:** Windows 10/11 (баъд Android/Web имконпазир)
+**Стек:** Flutter • Dart • Riverpod • Dio • go_router • Drift (offline) • Material 3.
+**Платформа:** **DESKTOP-ONLY — Windows 10/11 + macOS.** Мобилӣ (iOS/Android) ва web
+**партофта шуданд** (қарори TZ_00 §5a, 2026-06-22).
+
+> ⚠️ **ОГОҲИ — таҳияи нав (2026-06-22):** ин ҳуҷҷат сохтори аввалияро тавсиф мекунад. Барои
+> UI/UX-и desktop-и нав (layout-и собит бе responsive breakpoint, design system нав бо
+> `StatusColors`, дашборд, command palette, EntityPicker ба ҷои typed ID, keyboard map,
+> packaging Win+mac) → **`TZ_03_DESKTOP_REDESIGN.md`** манбаи асосист. Барои offline-и пурра
+> (Drift schema, FEFO-offline, sync protocol, кори backend `/sync`) → **`TZ_04`**. Дар маврид
+> ихтилоф, TZ_03/TZ_04 авлавият доранд.
 
 ---
 
@@ -131,11 +140,16 @@ lib/
 
 ---
 
-## 6. UI/UX (Material 3)
-- Тема: равшан/торик, ранги асосӣ, шрифти калон барои касса.
-- Касса ба клавиатура бо hotkeys мутобиқ (зудтар аз муш).
-- Ҷадвалҳои калон: `data_table_2` + pagination/lazy.
-- Огоҳиҳо: snackbar/dialog; мӯҳлати наздик — ранги зард/сурх.
+## 6. UI/UX (Material 3) — нигаред TZ_03 барои тарроҳии desktop-и нав
+- **Layout-и собити desktop** (бе responsive breakpoint, бе bottom-nav): sidebar доимӣ +
+  top bar + page-header. Минималии равзана 1100×720, default 1440×900 (`window_manager`).
+- Тема: design system-и нав — Clinical Teal (seed `#0E7C66`), flat-bordered cards,
+  `StatusColors` ThemeExtension (сабз/зард/сурх барои мӯҳлат/камшуда/sync). Зичии desktop
+  ҳама ҷо, шрифти калон **танҳо** дар POS register (scoped theme). Тафсилот: TZ_03 §B.
+- Касса ба клавиатура бо hotkeys мутобиқ (зудтар аз муш) + global Ctrl+1..6, Ctrl+K palette.
+- Ҷадвалҳои калон: `AppDataTable` (дар `data_table_2`) + pagination/lazy + sticky header.
+- **EntityPicker** ба ҷои typed FK-ID (drug-group/manufacturer/unit/supplier).
+- Огоҳиҳо: toast bottom-right + banner; мӯҳлати наздик — ранги зард/сурх аз `StatusColors`.
 - Локализатсия: тоҷикӣ/русӣ (`intl`), формати сомонӣ.
 
 ---

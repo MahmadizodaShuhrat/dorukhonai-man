@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// A reusable primary action button used across features (TZ §1 `shared/`).
+/// A reusable primary action button (TZ_03 §B.7 `shared/`).
 ///
 /// Shows a progress spinner instead of the label while [isLoading] is true and
-/// disables interaction.
+/// disables interaction. Defaults to full width (login/forms); set
+/// [expand] to `false` for inline use in a page header/toolbar.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -11,6 +12,7 @@ class PrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.expand = true,
   });
 
   final String label;
@@ -18,29 +20,31 @@ class PrimaryButton extends StatelessWidget {
   final bool isLoading;
   final IconData? icon;
 
+  /// When `true`, stretches to fill the available width.
+  final bool expand;
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: isLoading ? null : onPressed,
-        child: isLoading
-            ? const SizedBox(
-                height: 22,
-                width: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.5),
-              )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon),
-                    const SizedBox(width: 8),
-                  ],
-                  Text(label),
+    final button = FilledButton(
+      onPressed: isLoading ? null : onPressed,
+      child: isLoading
+          ? const SizedBox(
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 18),
+                  const SizedBox(width: 8),
                 ],
-              ),
-      ),
+                Text(label),
+              ],
+            ),
     );
+
+    return expand ? SizedBox(width: double.infinity, child: button) : button;
   }
 }

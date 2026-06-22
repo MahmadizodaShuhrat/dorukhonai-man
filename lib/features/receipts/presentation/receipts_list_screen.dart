@@ -3,13 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../shared/app_data_table.dart';
+import '../../../shared/app_scaffold.dart';
+import '../../../shared/entity_picker.dart';
+import '../../../shared/status_chip.dart';
+import '../../reference/presentation/reference_providers.dart';
 import '../data/receipt_models.dart';
 import 'receipt_edit_screen.dart';
 import 'receipts_provider.dart';
 
-/// Goods-receipts list (Приход, TZ §3.4): status filter chips + a paginated
-/// [DataTable2] of receipt headers. Tapping a row opens the editor; the FAB
-/// creates a new draft.
+/// Goods-receipts list (Приход, TZ_03 §C.4): a full-width [AppDataTable] of
+/// receipt headers (№ · Сана · Таъминкунанда · Статус · Ҷамъ) under a
+/// page-header with a "+ Приход нав" primary action and a filter bar (status
+/// chips, date range, supplier picker). Tapping a row opens the full-page
+/// editor; the editor controller refreshes the list on every mutation.
 class ReceiptsListScreen extends ConsumerWidget {
   const ReceiptsListScreen({super.key});
 
@@ -27,84 +34,98 @@ class ReceiptsListScreen extends ConsumerWidget {
     final state = ref.watch(receiptsListControllerProvider);
     final controller = ref.read(receiptsListControllerProvider.notifier);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Приход'),
-        actions: [
-          IconButton(
-            tooltip: 'Навсозӣ',
-            icon: const Icon(Icons.refresh),
-            onPressed: state.isLoading ? null : controller.refresh,
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openEditor(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Приходи нав'),
-      ),
+    // Resolve supplier ids → names so the column shows a name, never a GUID
+    // (TZ_03 §C.4/§C.5). Falls back to the id while options are still loading.
+    final supplierNames = <String, String>{
+      for (final o
+          in ref.watch(supplierOptionsProvider('')).valueOrNull ??
+              const [])
+        o.id: o.label,
+    };
+
+    return AppScaffold(
+      icon: Icons.inventory_2_outlined,
+      title: 'Приход',
+      subtitle: 'Ҳамагӣ: ${state.total}',
+      padBody: false,
+      actions: [
+        IconButton(
+          tooltip: 'Навсозӣ',
+          icon: const Icon(Icons.refresh),
+          onPressed: state.isLoading ? null : controller.refresh,
+        ),
+        FilledButton.icon(
+          onPressed: () => _openEditor(context),
+          icon: const Icon(Icons.add),
+          label: const Text('Приход нав'),
+        ),
+      ],
       body: Column(
         children: [
-          _StatusFilterBar(
-            selected: state.status,
-            onSelected: controller.filterByStatus,
+          _FilterBar(state: state, controller: controller),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: _buildTable(context, state, controller, supplierNames),
+            ),
           ),
-          Expanded(child: _buildBody(context, state, controller)),
           _PaginationBar(state: state, controller: controller),
         ],
       ),
     );
   }
 
-  Widget _buildBody(
+  Widget _buildTable(
     BuildContext context,
     ReceiptsListState state,
     ReceiptsListController controller,
+    Map<String, String> supplierNames,
   ) {
-    if (state.failure != null && state.receipts.isEmpty) {
-      return _ErrorView(
-        message: state.failure!.message,
-        onRetry: controller.refresh,
-      );
-    }
-    if (!state.isLoading && state.receipts.isEmpty) {
-      return const _EmptyView();
-    }
-
     return Stack(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: DataTable2(
-            columnSpacing: 16,
-            horizontalMargin: 12,
-            minWidth: 760,
-            columns: const [
-              DataColumn2(label: Text('№'), size: ColumnSize.S),
-              DataColumn2(label: Text('Сана')),
-              DataColumn2(label: Text('Таъминкунанда'), size: ColumnSize.L),
-              DataColumn2(label: Text('Статус'), size: ColumnSize.S),
-              DataColumn2(
-                label: Text('Ҷамъ'),
-                numeric: true,
+        AppDataTable(
+          minWidth: 760,
+          isLoading: state.isLoading,
+          errorMessage: state.receipts.isEmpty ? state.failure?.message : null,
+          onRetry: controller.refresh,
+          emptyMessage: 'Приход ёфт нашуд',
+          emptyIcon: Icons.inventory_2_outlined,
+          columns: const [
+            DataColumn2(label: Text('№'), size: ColumnSize.S),
+            DataColumn2(label: Text('Сана'), fixedWidth: 110),
+            DataColumn2(label: Text('Таъминкунанда'), size: ColumnSize.L),
+            DataColumn2(label: Text('Статус'), fixedWidth: 130),
+            DataColumn2(label: Text('Ҷамъ'), numeric: true, fixedWidth: 120),
+          ],
+          rows: [
+            for (final receipt in state.receipts)
+              DataRow2(
+                onTap: () => _openEditor(context, receiptId: receipt.id),
+                cells: [
+                  DataCell(Text(receipt.number)),
+                  DataCell(Text(Formatters.date(receipt.date))),
+                  DataCell(
+                    Text(
+                      supplierNames[receipt.supplierId] ?? receipt.supplierId,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  DataCell(
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: ReceiptStatusChip(status: receipt.status),
+                      ),
+                    ),
+                  ),
+                  DataCell(Text(Formatters.money(receipt.total))),
+                ],
               ),
-            ],
-            rows: [
-              for (final receipt in state.receipts)
-                DataRow2(
-                  onTap: () => _openEditor(context, receiptId: receipt.id),
-                  cells: [
-                    DataCell(Text(receipt.number)),
-                    DataCell(Text(Formatters.date(receipt.date))),
-                    DataCell(Text(receipt.supplierId)),
-                    DataCell(StatusChip(status: receipt.status)),
-                    DataCell(Text(Formatters.money(receipt.total))),
-                  ],
-                ),
-            ],
-          ),
+          ],
         ),
-        if (state.isLoading)
+        if (state.isLoading && state.receipts.isNotEmpty)
           const Positioned(
             top: 0,
             left: 0,
@@ -116,67 +137,106 @@ class ReceiptsListScreen extends ConsumerWidget {
   }
 }
 
-/// Status filter chips: All / Draft / Posted / Cancelled.
-class _StatusFilterBar extends StatelessWidget {
-  const _StatusFilterBar({required this.selected, required this.onSelected});
+/// Filter bar (TZ_03 §C.4): status chips (Ҳама / Лоиҳа / Тасдиқшуда /
+/// Бекоршуда), a date-range picker, and a supplier [EntityPicker].
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({required this.state, required this.controller});
 
-  final ReceiptStatus? selected;
-  final ValueChanged<ReceiptStatus?> onSelected;
+  final ReceiptsListState state;
+  final ReceiptsListController controller;
+
+  Future<void> _pickRange(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year + 1, 12, 31),
+      initialDateRange: state.from != null && state.to != null
+          ? DateTimeRange(start: state.from!, end: state.to!)
+          : null,
+    );
+    if (picked != null) {
+      await controller.filterByDateRange(picked.start, picked.end);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Row(
+    final hasRange = state.from != null && state.to != null;
+    final rangeLabel = hasRange
+        ? '${Formatters.date(state.from!)} – ${Formatters.date(state.to!)}'
+        : 'Сана';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           ChoiceChip(
             label: const Text('Ҳама'),
-            selected: selected == null,
-            onSelected: (_) => onSelected(null),
+            selected: state.status == null,
+            onSelected: (_) => controller.filterByStatus(null),
           ),
-          const SizedBox(width: 8),
-          for (final status in ReceiptStatus.values) ...[
+          for (final status in ReceiptStatus.values)
             ChoiceChip(
               label: Text(statusLabel(status)),
-              selected: selected == status,
-              onSelected: (_) => onSelected(status),
+              selected: state.status == status,
+              onSelected: (_) => controller.filterByStatus(status),
             ),
-            const SizedBox(width: 8),
-          ],
+          const SizedBox(width: 4),
+          OutlinedButton.icon(
+            onPressed: () => _pickRange(context),
+            icon: const Icon(Icons.calendar_today, size: 16),
+            label: Text(rangeLabel),
+          ),
+          if (hasRange)
+            IconButton(
+              tooltip: 'Санаро тоза кардан',
+              icon: const Icon(Icons.clear, size: 18),
+              onPressed: () => controller.filterByDateRange(null, null),
+            ),
+          SizedBox(
+            width: 260,
+            child: EntityPicker(
+              label: 'Таъминкунанда',
+              icon: Icons.local_shipping_outlined,
+              optionsProvider: (s) => supplierOptionsProvider(s),
+              selectedId: state.supplierId.isEmpty ? null : state.supplierId,
+              onChanged: (id) => controller.filterBySupplier(id ?? ''),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// Coloured chip rendering a [ReceiptStatus].
-class StatusChip extends StatelessWidget {
-  const StatusChip({super.key, required this.status});
+/// Coloured chip rendering a [ReceiptStatus] via the shared [StatusChip] +
+/// [StatusColors] tones (Draft=info, Posted=ok, Cancelled=danger).
+class ReceiptStatusChip extends StatelessWidget {
+  const ReceiptStatusChip({super.key, required this.status, this.dense = true});
 
   final ReceiptStatus status;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final (Color bg, Color fg) = switch (status) {
-      ReceiptStatus.draft => (scheme.surfaceContainerHighest, scheme.onSurface),
-      ReceiptStatus.posted => (scheme.primaryContainer, scheme.onPrimaryContainer),
-      ReceiptStatus.cancelled => (scheme.errorContainer, scheme.onErrorContainer),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        statusLabel(status),
-        style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600),
-      ),
+    return StatusChip(
+      label: statusLabel(status),
+      tone: statusTone(status),
+      dense: dense,
     );
   }
 }
+
+/// Maps a [ReceiptStatus] to its semantic [StatusTone].
+StatusTone statusTone(ReceiptStatus status) => switch (status) {
+  ReceiptStatus.draft => StatusTone.info,
+  ReceiptStatus.posted => StatusTone.ok,
+  ReceiptStatus.cancelled => StatusTone.danger,
+};
 
 /// Tajik label for a [ReceiptStatus].
 String statusLabel(ReceiptStatus status) => switch (status) {
@@ -193,85 +253,35 @@ class _PaginationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            Text('Ҳамагӣ: ${state.total}'),
-            const Spacer(),
-            IconButton(
-              tooltip: 'Қаблӣ',
-              icon: const Icon(Icons.chevron_left),
-              onPressed: state.hasPrevious && !state.isLoading
-                  ? controller.previousPage
-                  : null,
-            ),
-            Text('${state.page} / ${state.pageCount}'),
-            IconButton(
-              tooltip: 'Баъдӣ',
-              icon: const Icon(Icons.chevron_right),
-              onPressed: state.hasNext && !state.isLoading
-                  ? controller.nextPage
-                  : null,
-            ),
-          ],
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
       ),
-    );
-  }
-}
-
-class _EmptyView extends StatelessWidget {
-  const _EmptyView();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Row(
         children: [
-          Icon(
-            Icons.inventory_2_outlined,
-            size: 64,
-            color: Theme.of(context).colorScheme.outline,
+          Text(
+            'Саҳ. ${state.page} аз ${state.pageCount}',
+            style: theme.textTheme.bodySmall,
           ),
-          const SizedBox(height: 12),
-          const Text('Приход ёфт нашуд'),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Theme.of(context).colorScheme.error,
+          const Spacer(),
+          IconButton(
+            tooltip: 'Қаблӣ',
+            icon: const Icon(Icons.chevron_left),
+            onPressed: state.hasPrevious && !state.isLoading
+                ? controller.previousPage
+                : null,
           ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(message, textAlign: TextAlign.center),
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Аз нав кӯшиш кунед'),
+          Text('${state.page} / ${state.pageCount}'),
+          IconButton(
+            tooltip: 'Баъдӣ',
+            icon: const Icon(Icons.chevron_right),
+            onPressed: state.hasNext && !state.isLoading
+                ? controller.nextPage
+                : null,
           ),
         ],
       ),

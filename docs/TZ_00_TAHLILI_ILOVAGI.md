@@ -177,6 +177,32 @@
 
 ---
 
+## 5a. Қарори нав: DESKTOP-ONLY + MAXIMIZE-OFFLINE (RESOLVED — 2026-06-22)
+
+> Қарори соҳиб (FIXED). Backend (.NET 10) тайёр ва дар PostgreSQL live-test шуда; барномаи
+> Flutter ҳамаи экранҳоро дорад, вале cross-platform/responsive (NavigationRail дар васеъ,
+> bottom NavigationBar дар танг) сохта шуда — соҳиб мегӯяд дар лаптоп **ноқулай ва печида** аст.
+
+- [x] **DESKTOP ONLY — Windows + macOS.** Мобилӣ (iOS/Android) ва web **партофта мешаванд**;
+      барои экрани хурд оптимизатсия қатъ мешавад. Тарроҳӣ барои лаптопи воқеӣ бо
+      клавиатура+муш ва равзанаи калон. Папкаҳои `android/ios/web/linux` физикӣ нест карда
+      мешаванд; `pubspec.yaml` → `platforms: { windows:, macos: }`.
+- [x] **UI-и касбӣ ва зебои дорухона/POS:** навигатсияи доимӣ (sidebar + top bar, бе breakpoint),
+      дашборд, ҷадвалҳои зич вале равшан, огоҳии барҷастаи мӯҳлат/камшуда, checkout-и зуди
+      keyboard-driven. Зичии desktop ҳама ҷо, ба истиснои POS register (калон мемонад).
+- [x] **Feature-ҳои воқеӣ ба backend-и мавҷуд wired** (API аллакай ҳаст — TZ_01 §4).
+      Нест кардани typed-ID (FK ҳамчун матн) → `EntityPicker` dropdown.
+- [x] **MAXIMIZE OFFLINE:** ҳадди ниҳоии офлайн муайян карда шуд (TZ_04): scan/search/browse/
+      cart + checkout + смена + Z-report-и local пурра офлайн; FEFO/нарх indicative, сервер
+      authoritative дар sync. **Огоҳӣ:** ин endpoint-ҳои `/sync/catalog` + `/sync/sales`-ро
+      (TZ_01 §4.9, ҳоло НЕСТ) талаб мекунад — gap-и ягонаи backend, бояд аввал сохта шавад.
+
+> Ҳуҷҷатҳои нав: **`TZ_03_DESKTOP_REDESIGN.md`** (shell, design system, экран ба экран,
+> keyboard map, wireframes, roadmap) ва **`TZ_04_OFFLINE_ARCHITECTURE.md`** (матритса, Drift
+> schema, FEFO-offline + reconciliation, sync protocol, кори backend+Flutter sequenced).
+
+---
+
 ## 6. Тартиби хондани ТЗ
 
 1. Ин ҳуҷҷат (`TZ_00`) — манзара ва қоидаҳои умумӣ.

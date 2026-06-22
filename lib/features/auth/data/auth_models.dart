@@ -25,13 +25,17 @@ enum UserRole {
 }
 
 /// Authenticated user.
-/// Contract: `{ "id": guid, "fullName": string, "userName": string, "role": ... }`.
+/// Contract: `{ "id": guid, "fullName": string, "userName": string, "role": ...,
+/// "branchId": guid? }`. `branchId` is the user's primary branch (the central
+/// branch for a single-branch deployment); used to seed the POS/stock branch
+/// context (TZ_05 FW1) without any hardcoded id.
 class User {
   const User({
     required this.id,
     required this.fullName,
     required this.userName,
     required this.role,
+    this.branchId,
   });
 
   final String id;
@@ -39,12 +43,18 @@ class User {
   final String userName;
   final UserRole role;
 
+  /// Primary branch GUID, when the backend supplies it. `null`/empty falls back
+  /// to a `GET /branches` lookup.
+  final String? branchId;
+
   factory User.fromJson(Map<String, dynamic> json) {
+    final rawBranch = json['branchId'] as String?;
     return User(
       id: json['id'] as String,
       fullName: json['fullName'] as String? ?? '',
       userName: json['userName'] as String? ?? '',
       role: UserRole.fromWire(json['role'] as String?),
+      branchId: (rawBranch == null || rawBranch.isEmpty) ? null : rawBranch,
     );
   }
 
@@ -53,6 +63,7 @@ class User {
     'fullName': fullName,
     'userName': userName,
     'role': role.wire,
+    if (branchId != null) 'branchId': branchId,
   };
 }
 

@@ -6,12 +6,15 @@ import 'package:dorukhonai_man/core/api/api_result.dart';
 import 'package:dorukhonai_man/core/api/paged.dart';
 import 'package:dorukhonai_man/features/auth/data/auth_models.dart';
 import 'package:dorukhonai_man/features/auth/data/auth_repository.dart';
+import 'package:dorukhonai_man/features/branch/data/branch_models.dart';
+import 'package:dorukhonai_man/features/branch/data/branch_repository.dart';
 import 'package:dorukhonai_man/features/pos/data/pos_models.dart';
 import 'package:dorukhonai_man/features/pos/data/pos_repository.dart';
 import 'package:dorukhonai_man/features/products/data/product_models.dart';
 import 'package:dorukhonai_man/features/products/data/products_repository.dart';
 import 'package:dorukhonai_man/features/receipts/data/receipt_models.dart';
 import 'package:dorukhonai_man/features/receipts/data/receipts_repository.dart';
+import 'package:dorukhonai_man/features/reference/data/reference_repository.dart';
 import 'package:dorukhonai_man/features/stock/data/stock_models.dart';
 import 'package:dorukhonai_man/features/stock/data/stock_repository.dart';
 
@@ -617,3 +620,66 @@ StockMovement sampleMovement({
   createdAt: createdAt ?? DateTime(2026, 6, 1, 10, 30),
   documentType: documentType,
 );
+
+/// Fake [BranchRepository] returning a canned branch list. Defaults to a single
+/// central branch so the resolved [currentBranchIdProvider] is deterministic.
+class FakeBranchRepository implements BranchRepository {
+  FakeBranchRepository({List<Branch>? branches})
+    : branches =
+          branches ??
+          const [Branch(id: 'br-1', name: 'Дорухонаи марказӣ', isCentral: true)];
+
+  final List<Branch> branches;
+  int listCalls = 0;
+
+  @override
+  Future<ApiResult<List<Branch>>> list() async {
+    listCalls++;
+    return Success(branches);
+  }
+}
+
+/// Fake [ReferenceRepository] returning canned reference lists for the
+/// EntityPicker (drug-groups/manufacturers/units/suppliers). Defaults to empty
+/// lists; pass items per entity as needed.
+class FakeReferenceRepository implements ReferenceRepository {
+  FakeReferenceRepository({
+    this.drugGroupList = const [],
+    this.manufacturerList = const [],
+    this.unitList = const [],
+    this.supplierList = const [],
+  });
+
+  final List<DrugGroup> drugGroupList;
+  final List<Manufacturer> manufacturerList;
+  final List<Unit> unitList;
+  final List<Supplier> supplierList;
+
+  @override
+  Future<ApiResult<Paged<DrugGroup>>> drugGroups({
+    String? search,
+    int page = 1,
+    int size = 50,
+  }) async => Success(paged(drugGroupList));
+
+  @override
+  Future<ApiResult<Paged<Manufacturer>>> manufacturers({
+    String? search,
+    int page = 1,
+    int size = 50,
+  }) async => Success(paged(manufacturerList));
+
+  @override
+  Future<ApiResult<Paged<Unit>>> units({
+    String? search,
+    int page = 1,
+    int size = 50,
+  }) async => Success(paged(unitList));
+
+  @override
+  Future<ApiResult<Paged<Supplier>>> suppliers({
+    String? search,
+    int page = 1,
+    int size = 50,
+  }) async => Success(paged(supplierList));
+}

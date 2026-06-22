@@ -1,15 +1,10 @@
-import '../config/api_config.dart';
-
 /// Application-wide constants.
 ///
 /// The single source of truth for the contract is the server's Swagger/OpenAPI
-/// (TZ §10).
+/// (TZ §10). The backend base URL is NOT here — it is configurable at runtime
+/// via `ServerConfig`/`serverConfigProvider` (see `core/config/api_config.dart`).
 class AppConstants {
   AppConstants._();
-
-  /// Base URL of the .NET backend, resolved per platform (see [ApiConfig]).
-  /// API version is `/api/v1` (TZ §10).
-  static String get apiBaseUrl => ApiConfig.baseUrl;
 
   /// Currency code/label used across the app (somoni, TZ §6).
   static const String currencyCode = 'TJS';

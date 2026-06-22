@@ -253,6 +253,9 @@ class _ReturnLinesViewState extends ConsumerState<_ReturnLinesView> {
         await ReceiptDialog.show(context, sale);
       case SaleSubmitFailure(:final failure):
         _showSnack(failure.message, isError: true);
+      case SaleSubmitPendingOffline():
+        // Returns are online-only (TZ_04 §1: возврат DEGRADED, not offline).
+        _showSnack('Бозгашт офлайн дастгирӣ намешавад.', isError: true);
     }
   }
 

@@ -47,6 +47,13 @@ dependencies:
   # JWT secure storage (TZ §2)
   flutter_secure_storage: ^9.2.4
 
+  # Desktop window chrome — size/min/title/center (TZ_03 §E.2)
+  window_manager: ^0.4.3
+
+  # Persisted, non-secret app preferences: configurable server base URL and
+  # window bounds (TZ_03 §E.8). Tokens stay in flutter_secure_storage.
+  shared_preferences: ^2.3.2
+
   # Date/money formatting, localization (TZ §6)
   intl: ^0.20.2
 
@@ -66,6 +73,7 @@ dependencies:
   # Immutable model/DTO annotations (TZ §4)
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:

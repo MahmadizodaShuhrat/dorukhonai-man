@@ -77,7 +77,7 @@ void main() {
       return _json({}, 200);
     });
 
-    final client = DioClient(TokenStorage(), adapter: adapter);
+    final client = DioClient(TokenStorage(), baseUrl: 'http://localhost:5000/api/v1', adapter: adapter);
 
     final response = await client.dio.get<Map<String, dynamic>>('/products');
 
@@ -104,6 +104,7 @@ void main() {
 
     final client = DioClient(
       TokenStorage(),
+      baseUrl: 'http://localhost:5000/api/v1',
       onForcedLogout: () => loggedOut = true,
       adapter: adapter,
     );
@@ -130,6 +131,7 @@ void main() {
 
     final client = DioClient(
       TokenStorage(),
+      baseUrl: 'http://localhost:5000/api/v1',
       onForcedLogout: () => loggedOut = true,
       adapter: adapter,
     );

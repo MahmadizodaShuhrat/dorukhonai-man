@@ -1,4 +1,6 @@
 import 'package:dorukhonai_man/core/api/api_result.dart';
+import 'package:dorukhonai_man/features/branch/data/branch_models.dart';
+import 'package:dorukhonai_man/features/branch/presentation/branch_provider.dart';
 import 'package:dorukhonai_man/features/pos/data/pos_models.dart';
 import 'package:dorukhonai_man/features/pos/data/pos_repository.dart';
 import 'package:dorukhonai_man/features/pos/presentation/close_shift_dialog.dart';
@@ -15,7 +17,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fakes.dart';
 
-/// Hosts [PosScreen] with fake POS + products repositories.
+/// Hosts [PosScreen] with fake POS + products + branch repositories. The fake
+/// branch resolves to `br-1` (matching `sampleShift`).
 Widget _host(FakePosRepository pos, {FakeProductsRepository? products}) {
   return ProviderScope(
     overrides: [
@@ -23,14 +26,30 @@ Widget _host(FakePosRepository pos, {FakeProductsRepository? products}) {
       productsRepositoryProvider.overrideWithValue(
         products ?? FakeProductsRepository(),
       ),
+      // Resolve the branch directly to `br-1` (matching `sampleShift`) so POS
+      // tests stay free of the auth/dio/prefs chain.
+      currentBranchProvider.overrideWith(
+        (ref) async =>
+            const Branch(id: 'br-1', name: 'Дорухонаи марказӣ', isCentral: true),
+      ),
     ],
     child: const MaterialApp(home: PosScreen()),
   );
 }
 
+/// POS is a desktop-only two-pane register (TZ_03 §C.2); size the test surface
+/// to a desktop window so both panes (and the header actions) lay out on-screen
+/// instead of the default 800x600 phone surface.
+void _desktop(WidgetTester tester) {
+  tester.view.physicalSize = const Size(1440, 900);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+}
+
 void main() {
   group('Open-shift gating', () {
     testWidgets('no open shift shows the open-shift panel', (tester) async {
+      _desktop(tester);
       // currentShift defaults to a 404 -> no shift.
       await tester.pumpWidget(_host(FakePosRepository()));
       await tester.pumpAndSettle();
@@ -43,14 +62,15 @@ void main() {
 
     testWidgets('opening a shift transitions to the sale screen',
         (tester) async {
+      _desktop(tester);
       final repo = FakePosRepository(
         openShiftResult: Success(sampleShift()),
       );
       await tester.pumpWidget(_host(repo));
       await tester.pumpAndSettle();
 
-      // Enter a branch id, tap open, fill opening cash.
-      await tester.enterText(find.byType(TextField).first, 'br-1');
+      // No typed "Филиал (ID)" field anymore (single branch implicit, §C.2);
+      // tap open, then fill opening cash.
       await tester.tap(find.text('Кушодани смена'));
       await tester.pumpAndSettle();
 
@@ -60,6 +80,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.openShiftCalls, 1);
+      // The REAL resolved branch id (from /branches) is sent, not 'default'.
       expect(repo.lastBranchId, 'br-1');
       // Sale screen is now shown.
       expect(find.text('Пардохт (F9)'), findsOneWidget);
@@ -67,6 +88,7 @@ void main() {
 
     testWidgets('opening with a 409 surfaces the conflict message',
         (tester) async {
+      _desktop(tester);
       final repo = FakePosRepository(
         openShiftResult: const Error(
           ServerFailure('Смена аллакай кушода аст.', statusCode: 409),
@@ -75,7 +97,6 @@ void main() {
       await tester.pumpWidget(_host(repo));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextField).first, 'br-1');
       await tester.tap(find.text('Кушодани смена'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Кушодан'));
@@ -93,6 +114,7 @@ void main() {
       WidgetTester tester, {
       FakeProductsRepository? products,
     }) async {
+      _desktop(tester);
       final repo = FakePosRepository(currentShiftResult: Success(sampleShift()));
       await tester.pumpWidget(_host(repo, products: products));
       await tester.pumpAndSettle();
@@ -180,6 +202,7 @@ void main() {
 
   group('Payment', () {
     testWidgets('cannot pay an empty cart', (tester) async {
+      _desktop(tester);
       final repo = FakePosRepository(currentShiftResult: Success(sampleShift()));
       await tester.pumpWidget(_host(repo));
       await tester.pumpAndSettle();
@@ -196,6 +219,7 @@ void main() {
     testWidgets(
         'valid cash payment calls createSale with the contract body and clears',
         (tester) async {
+      _desktop(tester);
       final repo = FakePosRepository(
         currentShiftResult: Success(sampleShift()),
         createSaleResult: Success(sampleSale(number: 'S-100')),
@@ -318,6 +342,7 @@ void main() {
 
   group('Close shift', () {
     testWidgets('closing shows the Z-report summary', (tester) async {
+      _desktop(tester);
       final repo = FakePosRepository(
         currentShiftResult: Success(sampleShift()),
         closeShiftResult: Success(
@@ -373,6 +398,7 @@ void main() {
   group('Returns', () {
     testWidgets('returning a sale line calls returnSale with {saleLineId,qty}',
         (tester) async {
+      _desktop(tester);
       final sale = sampleSale(
         id: 'sale-1',
         number: 'S-001',

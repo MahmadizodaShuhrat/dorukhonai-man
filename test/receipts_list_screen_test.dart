@@ -1,17 +1,28 @@
 import 'package:dorukhonai_man/core/api/api_result.dart';
 import 'package:dorukhonai_man/features/receipts/data/receipt_models.dart';
 import 'package:dorukhonai_man/features/receipts/data/receipts_repository.dart';
+import 'package:dorukhonai_man/features/products/data/product_models.dart'
+    show Supplier;
 import 'package:dorukhonai_man/features/receipts/presentation/receipts_list_screen.dart';
+import 'package:dorukhonai_man/features/reference/data/reference_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fakes.dart';
 
-Widget _host(FakeReceiptsRepository repo) {
+Widget _host(FakeReceiptsRepository repo, {FakeReferenceRepository? reference}) {
   return ProviderScope(
-    overrides: [receiptsRepositoryProvider.overrideWithValue(repo)],
-    child: const MaterialApp(home: ReceiptsListScreen()),
+    overrides: [
+      receiptsRepositoryProvider.overrideWithValue(repo),
+      // The supplier filter EntityPicker + column-name lookup read reference.
+      referenceRepositoryProvider.overrideWithValue(
+        reference ?? FakeReferenceRepository(),
+      ),
+    ],
+    // ReceiptsListScreen renders INSIDE the desktop shell, which provides the
+    // Scaffold/Material/ScaffoldMessenger ancestors — mirror that here.
+    child: const MaterialApp(home: Scaffold(body: ReceiptsListScreen())),
   );
 }
 
@@ -57,7 +68,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Хатои шабака. Пайвастро санҷед.'), findsOneWidget);
-    expect(find.text('Аз нав кӯшиш кунед'), findsOneWidget);
+    expect(find.text('Аз нав'), findsOneWidget);
   });
 
   testWidgets('tapping the Posted status chip filters via the repository',
@@ -74,5 +85,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repo.lastStatusFilter, ReceiptStatus.posted);
+  });
+
+  testWidgets('supplier column shows the resolved name, not the GUID',
+      (tester) async {
+    final repo = FakeReceiptsRepository(
+      listResult: Success(
+        paged(
+          [sampleReceipt(id: 'r1', number: 'PR-001', supplierId: 'sup-1')],
+          total: 1,
+        ),
+      ),
+    );
+    final reference = FakeReferenceRepository(
+      supplierList: const [Supplier(id: 'sup-1', name: 'Фармотрейд')],
+    );
+
+    await tester.pumpWidget(_host(repo, reference: reference));
+    await tester.pumpAndSettle();
+
+    // The name is shown; the raw supplier id is not.
+    expect(find.text('Фармотрейд'), findsWidgets);
+    expect(find.text('sup-1'), findsNothing);
   });
 }

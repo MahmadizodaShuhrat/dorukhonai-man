@@ -106,4 +106,48 @@ void main() {
     expect(find.text('Камшуда дору'), findsOneWidget);
     expect(repo.lowCalls, greaterThan(0));
   });
+
+  testWidgets('selecting a row opens the detail panel with movements',
+      (tester) async {
+    final repo = FakeStockRepository(
+      listResult: Success(
+        paged([sampleStockItem(productName: 'Аспирин')], total: 1),
+      ),
+      movementsResult: Success(
+        paged([sampleMovement(type: 'Sale', quantity: -2)], total: 1),
+      ),
+    );
+
+    await tester.pumpWidget(_host(repo));
+    await tester.pumpAndSettle();
+
+    // Tap the on-hand row (cell text) to open the side panel.
+    await tester.tap(find.text('Аспирин').first);
+    await tester.pumpAndSettle();
+
+    // Panel sections + a translated movement label appear.
+    expect(find.textContaining('ПАРТИЯҲО'), findsOneWidget);
+    expect(find.text('ҲАРАКАТИ ДОРУ'), findsOneWidget);
+    expect(find.text('Фурӯш'), findsOneWidget); // Sale -> Tajik label
+    expect(repo.movementsCalls, greaterThan(0));
+    expect(repo.lastMovementsProductId, 'p1');
+  });
+
+  testWidgets('detail panel closes via the close button', (tester) async {
+    final repo = FakeStockRepository(
+      listResult: Success(
+        paged([sampleStockItem(productName: 'Аспирин')], total: 1),
+      ),
+    );
+
+    await tester.pumpWidget(_host(repo));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Аспирин').first);
+    await tester.pumpAndSettle();
+    expect(find.text('ҲАРАКАТИ ДОРУ'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Пӯшидан'));
+    await tester.pumpAndSettle();
+    expect(find.text('ҲАРАКАТИ ДОРУ'), findsNothing);
+  });
 }
