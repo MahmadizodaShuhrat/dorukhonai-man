@@ -9,9 +9,12 @@ import '../features/pos/presentation/pos_providers.dart';
 import '../features/sync/presentation/connectivity_provider.dart';
 import '../features/sync/presentation/sync_panel.dart';
 import '../features/sync/presentation/sync_providers.dart';
+import '../l10n/app_localizations.dart';
 import '../shared/status_chip.dart';
 import 'command_palette.dart';
+import 'locale_provider.dart';
 import 'router.dart';
+import 'theme_mode_provider.dart';
 
 /// Fixed professional desktop shell (TZ_03 §A): a persistent left sidebar, a
 /// top bar (branch · shift · online/offline · Ctrl+K search · user menu), and
@@ -175,6 +178,7 @@ class _Sidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 160),
       width: collapsed ? _collapsedWidth : _expandedWidth,
@@ -190,7 +194,7 @@ class _Sidebar extends StatelessWidget {
               children: [
                 _NavItem(
                   icon: Icons.dashboard_outlined,
-                  label: 'Дашборд',
+                  label: l.navDashboard,
                   route: AppRoutes.dashboard,
                   shortcut: 'Ctrl+1',
                   location: location,
@@ -199,7 +203,7 @@ class _Sidebar extends StatelessWidget {
                 ),
                 _NavItem(
                   icon: Icons.point_of_sale_outlined,
-                  label: 'Касса',
+                  label: l.navPos,
                   route: AppRoutes.pos,
                   shortcut: 'Ctrl+2',
                   location: location,
@@ -208,7 +212,7 @@ class _Sidebar extends StatelessWidget {
                 ),
                 _NavItem(
                   icon: Icons.warehouse_outlined,
-                  label: 'Анбор',
+                  label: l.navStock,
                   route: AppRoutes.stock,
                   shortcut: 'Ctrl+3',
                   location: location,
@@ -217,7 +221,7 @@ class _Sidebar extends StatelessWidget {
                 ),
                 _NavItem(
                   icon: Icons.inventory_2_outlined,
-                  label: 'Приход',
+                  label: l.navReceipts,
                   route: AppRoutes.receipts,
                   shortcut: 'Ctrl+4',
                   location: location,
@@ -229,7 +233,7 @@ class _Sidebar extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                     child: Text(
-                      'АМАЛИЁТИ АНБОР',
+                      l.navSectionStockOps,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         letterSpacing: 0.6,
@@ -245,7 +249,7 @@ class _Sidebar extends StatelessWidget {
                   ),
                 _NavItem(
                   icon: Icons.delete_sweep_outlined,
-                  label: 'Списание',
+                  label: l.navWriteOffs,
                   route: AppRoutes.writeOffs,
                   location: location,
                   collapsed: collapsed,
@@ -253,7 +257,7 @@ class _Sidebar extends StatelessWidget {
                 ),
                 _NavItem(
                   icon: Icons.fact_check_outlined,
-                  label: 'Инвентаризатсия',
+                  label: l.navInventory,
                   route: AppRoutes.inventory,
                   location: location,
                   collapsed: collapsed,
@@ -261,7 +265,7 @@ class _Sidebar extends StatelessWidget {
                 ),
                 _NavItem(
                   icon: Icons.assignment_return_outlined,
-                  label: 'Бозгашт',
+                  label: l.navSupplierReturns,
                   route: AppRoutes.supplierReturns,
                   location: location,
                   collapsed: collapsed,
@@ -272,7 +276,7 @@ class _Sidebar extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                     child: Text(
-                      'МАЪЛУМОТНОМАҲО',
+                      l.navSectionReference,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         letterSpacing: 0.6,
@@ -288,7 +292,7 @@ class _Sidebar extends StatelessWidget {
                   ),
                 _NavItem(
                   icon: Icons.medication_outlined,
-                  label: 'Доруҳо',
+                  label: l.navProducts,
                   route: AppRoutes.products,
                   location: location,
                   collapsed: collapsed,
@@ -296,7 +300,7 @@ class _Sidebar extends StatelessWidget {
                 ),
                 _NavItem(
                   icon: Icons.category_outlined,
-                  label: 'Гурӯҳҳо',
+                  label: l.navDrugGroups,
                   route: AppRoutes.drugGroups,
                   location: location,
                   collapsed: collapsed,
@@ -304,7 +308,7 @@ class _Sidebar extends StatelessWidget {
                 ),
                 _NavItem(
                   icon: Icons.local_shipping_outlined,
-                  label: 'Таъминкунандагон',
+                  label: l.navSuppliers,
                   route: AppRoutes.suppliers,
                   location: location,
                   collapsed: collapsed,
@@ -312,7 +316,7 @@ class _Sidebar extends StatelessWidget {
                 ),
                 _NavItem(
                   icon: Icons.factory_outlined,
-                  label: 'Истеҳсолкунандагон',
+                  label: l.navManufacturers,
                   route: AppRoutes.manufacturers,
                   location: location,
                   collapsed: collapsed,
@@ -320,7 +324,7 @@ class _Sidebar extends StatelessWidget {
                 ),
                 _NavItem(
                   icon: Icons.straighten_outlined,
-                  label: 'Воҳидҳо',
+                  label: l.navUnits,
                   route: AppRoutes.units,
                   location: location,
                   collapsed: collapsed,
@@ -336,7 +340,7 @@ class _Sidebar extends StatelessWidget {
                   ),
                 _NavItem(
                   icon: Icons.bar_chart_outlined,
-                  label: 'Ҳисоботҳо',
+                  label: l.navReports,
                   route: AppRoutes.reports,
                   shortcut: 'Ctrl+5',
                   location: location,
@@ -345,7 +349,7 @@ class _Sidebar extends StatelessWidget {
                 ),
                 _NavItem(
                   icon: Icons.settings_outlined,
-                  label: 'Танзимот',
+                  label: l.navSettings,
                   route: AppRoutes.settings,
                   shortcut: 'Ctrl+6',
                   location: location,
@@ -365,7 +369,7 @@ class _Sidebar extends StatelessWidget {
                   : MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  tooltip: collapsed ? 'Васеъ кардан' : 'Печондан',
+                  tooltip: collapsed ? l.commonExpand : l.commonCollapse,
                   icon: Icon(
                     collapsed ? Icons.chevron_right : Icons.chevron_left,
                   ),
@@ -536,12 +540,81 @@ class _TopBar extends ConsumerWidget {
           // the sync queue / reconciliation panel.
           const _ConnectivityIndicator(),
           const Spacer(),
-          // Command search (Ctrl+K) — opens the real command palette.
-          _SearchButton(onTap: () => CommandPalette.show(context)),
-          const SizedBox(width: 12),
+          // Command search (Ctrl+K) — opens the real command palette. Flexible
+          // so the top-bar Row never overflows on narrower content areas (the
+          // search field shrinks before the action buttons clip).
+          Flexible(
+            child: _SearchButton(onTap: () => CommandPalette.show(context)),
+          ),
+          const SizedBox(width: 4),
+          // Quick Тоҷикӣ/Русӣ language toggle (full control in Settings → Забон).
+          const _LanguageToggle(),
+          const SizedBox(width: 4),
+          // Quick light/dark toggle (no need to open Settings).
+          const _ThemeToggle(),
+          const SizedBox(width: 8),
           _UserMenu(userName: user?.fullName, role: user?.role.wire),
         ],
       ),
+    );
+  }
+}
+
+/// Quick Тоҷикӣ ↔ Русӣ language toggle in the top bar: a small button showing
+/// the active language code (`ТҶ` / `РУ`) that flips the locale via
+/// [localeControllerProvider] (persisted) on tap. Full control
+/// (Тоҷикӣ / Русский) lives in Settings → Забон/Язык. Kept compact (a single
+/// button rather than a two-segment control) so the top-bar Row never overflows.
+class _LanguageToggle extends ConsumerWidget {
+  const _LanguageToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
+    final locale = ref.watch(localeControllerProvider);
+    final controller = ref.read(localeControllerProvider.notifier);
+    final isTg = locale.languageCode != 'ru';
+    final label = isTg ? l.shellLanguageTajikShort : l.shellLanguageRussianShort;
+    return Tooltip(
+      message: l.shellLanguageTooltip,
+      child: TextButton(
+        onPressed: () => controller.setCode(isTg ? 'ru' : 'tg'),
+        style: TextButton.styleFrom(
+          minimumSize: const Size(40, 36),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          textStyle: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        child: Text(label),
+      ),
+    );
+  }
+}
+
+/// Quick light/dark theme toggle in the top bar. Flips between light and dark
+/// (resolving the current effective brightness for the system mode) and
+/// persists the choice via [themeModeControllerProvider]. Full control
+/// (Системавӣ/Равшан/Торик) lives in Settings → Намуди намоиш.
+class _ThemeToggle extends ConsumerWidget {
+  const _ThemeToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final mode = ref.watch(themeModeControllerProvider);
+    final controller = ref.read(themeModeControllerProvider.notifier);
+    final isDark =
+        mode == ThemeMode.dark ||
+        (mode == ThemeMode.system &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+    return IconButton(
+      tooltip: isDark ? l.shellThemeLight : l.shellThemeDark,
+      icon: Icon(isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
+      onPressed: () =>
+          controller.set(isDark ? ThemeMode.light : ThemeMode.dark),
     );
   }
 }
@@ -553,10 +626,11 @@ class _BranchChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final branch = ref.watch(currentBranchProvider);
     final name = branch.maybeWhen(
-      data: (b) => (b == null || b.name.isEmpty) ? 'Филиал' : b.name,
-      orElse: () => 'Филиал',
+      data: (b) => (b == null || b.name.isEmpty) ? l.shellBranchFallback : b.name,
+      orElse: () => l.shellBranchFallback,
     );
     return StatusChip(
       label: name,
@@ -574,13 +648,14 @@ class _ShiftChip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final shift = ref.watch(
       cashShiftControllerProvider.select((s) => s.hasOpenShift ? s.shift : null),
     );
     final open = shift != null;
     final label = open
-        ? 'Кушода · ${_hhmm(shift.openedAt)}'
-        : 'Смена баста';
+        ? l.shellShiftOpenAt(_hhmm(shift.openedAt))
+        : l.shellShiftClosed;
     return InkWell(
       borderRadius: BorderRadius.circular(999),
       onTap: () => context.go(AppRoutes.pos),
@@ -604,19 +679,22 @@ class _ConnectivityIndicator extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final conn = ref.watch(connectivityControllerProvider);
     final pending = ref.watch(pendingSyncCountProvider).valueOrNull ?? 0;
 
     final online = conn.isOnline;
     final tone = online ? StatusTone.ok : StatusTone.warn;
-    final base = online ? 'Онлайн' : 'Офлайн';
-    final label = pending > 0 ? '$base · $pending навбат' : base;
-    final tooltip = StringBuffer(online ? 'Сервер дастрас' : 'Сервер дастнорас');
+    final base = online ? l.shellOnline : l.shellOffline;
+    final label = pending > 0 ? l.shellQueueSuffix(base, pending) : base;
+    final tooltip = StringBuffer(
+      online ? l.shellServerReachable : l.shellServerUnreachable,
+    );
     if (conn.lastOnlineAt != null) {
-      tooltip.write('\nОхирин: ${_hhmm(conn.lastOnlineAt!)}');
+      tooltip.write('\n${l.shellLastOnline(_hhmm(conn.lastOnlineAt!))}');
     }
     if (pending > 0) {
-      tooltip.write('\n$pending фурӯш дар навбати синхрон');
+      tooltip.write('\n${l.shellPendingSyncCount(pending)}');
     }
 
     return Tooltip(
@@ -646,9 +724,9 @@ class _SearchButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SizedBox(
-      width: 280,
-      height: 36,
+    final l = AppLocalizations.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 280, minHeight: 36, maxHeight: 36),
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
@@ -666,7 +744,7 @@ class _SearchButton extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Ҷустуҷӯ ё фармон…',
+                l.shellSearchHint,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -695,7 +773,10 @@ class _UserMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final name = (userName == null || userName!.isEmpty) ? 'Корбар' : userName!;
+    final l = AppLocalizations.of(context);
+    final name = (userName == null || userName!.isEmpty)
+        ? l.shellUserFallback
+        : userName!;
     return MenuAnchor(
       builder: (context, controller, _) {
         return InkWell(
@@ -743,7 +824,7 @@ class _UserMenu extends ConsumerWidget {
         MenuItemButton(
           leadingIcon: const Icon(Icons.logout, size: 18),
           onPressed: () => ref.read(authControllerProvider.notifier).logout(),
-          child: const Text('Баромад'),
+          child: Text(l.shellLogout),
         ),
       ],
     );

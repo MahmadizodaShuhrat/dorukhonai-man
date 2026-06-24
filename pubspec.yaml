@@ -31,6 +31,11 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Localized Material/Cupertino/Widgets strings + the Global*Localizations
+  # delegates used for runtime Tajik (tg) / Russian (ru) localization (TZ §6).
+  flutter_localizations:
+    sdk: flutter
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -100,6 +105,9 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+
+  # Generate AppLocalizations from the ARB files in lib/l10n (see l10n.yaml).
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

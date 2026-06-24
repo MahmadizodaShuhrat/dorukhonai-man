@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_result.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/pos_models.dart';
 import '../data/pos_repository.dart';
 import 'pos_providers.dart';
@@ -64,20 +65,22 @@ class _SalePicker extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final salesAsync = ref.watch(shiftSalesProvider(shiftId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
-                'Интихоби чек барои бозгашт',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                l.returnsPickTitle,
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w600),
               ),
             ),
             IconButton(
-              tooltip: 'Пӯшидан',
+              tooltip: l.commonClose,
               icon: const Icon(Icons.close),
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -88,7 +91,7 @@ class _SalePicker extends ConsumerWidget {
           child: salesAsync.when(
             data: (sales) {
               if (sales.isEmpty) {
-                return const Center(child: Text('Фурӯш ёфт нашуд'));
+                return Center(child: Text(l.returnsNoSales));
               }
               return ListView.separated(
                 itemCount: sales.length,
@@ -97,7 +100,7 @@ class _SalePicker extends ConsumerWidget {
                   final sale = sales[index];
                   return ListTile(
                     dense: true,
-                    title: Text('Чек № ${sale.number}'),
+                    title: Text(l.receiptCheckNumber(sale.number)),
                     subtitle: Text(Formatters.dateTime(sale.createdAt)),
                     trailing: Text(Formatters.money(sale.total)),
                     onTap: () => onPicked(sale.id),
@@ -134,6 +137,7 @@ class _ReturnLinesViewState extends ConsumerState<_ReturnLinesView> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final saleAsync = ref.watch(saleDetailProvider(widget.saleId));
     final busy = ref.watch(saleSubmitControllerProvider);
 
@@ -143,18 +147,19 @@ class _ReturnLinesViewState extends ConsumerState<_ReturnLinesView> {
         Row(
           children: [
             IconButton(
-              tooltip: 'Бозгашт',
+              tooltip: l.returnsBack,
               icon: const Icon(Icons.arrow_back),
               onPressed: widget.onBack,
             ),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Сатрҳои бозгашт',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                l.returnsLinesTitle,
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w600),
               ),
             ),
             IconButton(
-              tooltip: 'Пӯшидан',
+              tooltip: l.commonClose,
               icon: const Icon(Icons.close),
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -163,7 +168,7 @@ class _ReturnLinesViewState extends ConsumerState<_ReturnLinesView> {
         const SizedBox(height: 8),
         Expanded(
           child: saleAsync.when(
-            data: (sale) => _buildLines(sale),
+            data: (sale) => _buildLines(l, sale),
             loading: () =>
                 const Center(child: CircularProgressIndicator()),
             error: (err, _) => Center(
@@ -177,16 +182,16 @@ class _ReturnLinesViewState extends ConsumerState<_ReturnLinesView> {
           child: FilledButton.icon(
             onPressed: busy ? null : _submit,
             icon: const Icon(Icons.assignment_return_outlined),
-            label: const Text('Бозгашт'),
+            label: Text(l.returnsSubmit),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildLines(Sale sale) {
+  Widget _buildLines(AppLocalizations l, Sale sale) {
     if (sale.lines.isEmpty) {
-      return const Center(child: Text('Сатр нест'));
+      return Center(child: Text(l.returnsNoLines));
     }
     return ListView.separated(
       itemCount: sale.lines.length,
@@ -197,9 +202,11 @@ class _ReturnLinesViewState extends ConsumerState<_ReturnLinesView> {
         return ListTile(
           title: Text(line.productName ?? line.productId),
           subtitle: Text(
-            'Серия: ${line.seriesNumber ?? '—'} • '
-            'Фурӯхта: ${_trimNum(line.quantity)} • '
-            '${Formatters.money(line.unitPrice)}',
+            l.returnsLineSubtitle(
+              line.seriesNumber ?? '—',
+              _trimNum(line.quantity),
+              Formatters.money(line.unitPrice),
+            ),
           ),
           trailing: SizedBox(
             width: 132,
@@ -207,7 +214,7 @@ class _ReturnLinesViewState extends ConsumerState<_ReturnLinesView> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 IconButton(
-                  tooltip: 'Кам',
+                  tooltip: l.posQtyDecrease,
                   icon: const Icon(Icons.remove_circle_outline),
                   onPressed: selected <= 0
                       ? null
@@ -217,7 +224,7 @@ class _ReturnLinesViewState extends ConsumerState<_ReturnLinesView> {
                 ),
                 Text(_trimNum(selected)),
                 IconButton(
-                  tooltip: 'Зиёд',
+                  tooltip: l.posQtyIncrease,
                   icon: const Icon(Icons.add_circle_outline),
                   onPressed: selected >= line.quantity
                       ? null
@@ -234,13 +241,14 @@ class _ReturnLinesViewState extends ConsumerState<_ReturnLinesView> {
   }
 
   Future<void> _submit() async {
+    final l = AppLocalizations.of(context);
     final lines = <SaleReturnLine>[
       for (final entry in _qty.entries)
         if (entry.value > 0)
           SaleReturnLine(saleLineId: entry.key, quantity: entry.value),
     ];
     if (lines.isEmpty) {
-      _showSnack('Ҳадди ақал як сатрро интихоб кунед', isError: true);
+      _showSnack(l.returnsSelectAtLeastOne, isError: true);
       return;
     }
     final result = await ref
@@ -255,7 +263,7 @@ class _ReturnLinesViewState extends ConsumerState<_ReturnLinesView> {
         _showSnack(failure.message, isError: true);
       case SaleSubmitPendingOffline():
         // Returns are online-only (TZ_04 §1: возврат DEGRADED, not offline).
-        _showSnack('Бозгашт офлайн дастгирӣ намешавад.', isError: true);
+        _showSnack(l.returnsOfflineUnsupported, isError: true);
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_result.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_data_table.dart';
 import '../../../shared/app_scaffold.dart';
 import '../../../shared/app_toast.dart';
@@ -55,15 +56,16 @@ class _SupplierReturnScreenState extends ConsumerState<SupplierReturnScreen> {
   }
 
   Future<void> _submit() async {
+    final l = AppLocalizations.of(context);
     final supplierId = _supplierId;
     if (supplierId == null || supplierId.isEmpty) {
-      AppToast.error(context, 'Таъминкунандаро интихоб кунед.');
+      AppToast.error(context, l.supplierReturnSelectSupplier);
       return;
     }
     final lines = ref.read(supplierReturnDraftProvider);
     final branchId = (await ref.read(currentBranchProvider.future))?.id;
     if (!mounted) return;
-    final failure = validateOperationLines(lines, branchId);
+    final failure = validateOperationLines(l, lines, branchId);
     if (failure != null) {
       AppToast.error(context, failure);
       return;
@@ -87,7 +89,7 @@ class _SupplierReturnScreenState extends ConsumerState<SupplierReturnScreen> {
         _noteController.clear();
         setState(() => _supplierId = null);
         ref.invalidate(supplierReturnHistoryProvider);
-        AppToast.success(context, 'Бозгашт ба таъминкунанда сабт шуд.');
+        AppToast.success(context, l.supplierReturnSaved);
       case Error(:final failure):
         AppToast.error(context, failure.message);
     }
@@ -95,17 +97,18 @@ class _SupplierReturnScreenState extends ConsumerState<SupplierReturnScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final lines = ref.watch(supplierReturnDraftProvider);
     final submitting = ref.watch(operationSubmittingProvider);
     return AppScaffold(
-      title: 'Бозгашт ба таъминкунанда',
+      title: l.supplierReturnTitle,
       icon: Icons.assignment_return_outlined,
-      subtitle: 'Баргардонидани партияҳо ба таъминкунанда',
+      subtitle: l.supplierReturnSubtitle,
       actions: [
         FilledButton.icon(
           onPressed: submitting || lines.isEmpty ? null : _submit,
           icon: const Icon(Icons.save_outlined),
-          label: const Text('Сабт кардан'),
+          label: Text(l.supplierReturnSubmit),
         ),
       ],
       body: Column(
@@ -118,7 +121,7 @@ class _SupplierReturnScreenState extends ConsumerState<SupplierReturnScreen> {
               SizedBox(
                 width: 320,
                 child: EntityPicker(
-                  label: 'Таъминкунанда',
+                  label: l.supplierReturnSupplier,
                   icon: Icons.local_shipping_outlined,
                   isRequired: true,
                   optionsProvider: (s) => supplierOptionsProvider(s),
@@ -130,10 +133,10 @@ class _SupplierReturnScreenState extends ConsumerState<SupplierReturnScreen> {
               Expanded(
                 child: TextField(
                   controller: _noteController,
-                  decoration: const InputDecoration(
-                    labelText: 'Эзоҳ',
+                  decoration: InputDecoration(
+                    labelText: l.writeOffNote,
                     isDense: true,
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
               ),
@@ -141,7 +144,7 @@ class _SupplierReturnScreenState extends ConsumerState<SupplierReturnScreen> {
               OutlinedButton.icon(
                 onPressed: _addBatch,
                 icon: const Icon(Icons.add),
-                label: const Text('Партия илова'),
+                label: Text(l.writeOffAddBatch),
               ),
             ],
           ),
@@ -149,8 +152,8 @@ class _SupplierReturnScreenState extends ConsumerState<SupplierReturnScreen> {
           Expanded(
             child: OperationLinesTable(
               provider: supplierReturnDraftProvider,
-              quantityLabel: 'Миқдор',
-              emptyMessage: 'Партия илова кунед барои бозгашт.',
+              quantityLabel: l.opColQty,
+              emptyMessage: l.supplierReturnEmptyDraft,
             ),
           ),
           const SizedBox(height: 16),
@@ -166,32 +169,33 @@ class _SupplierReturnHistory extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final async = ref.watch(supplierReturnHistoryProvider);
     return OperationHistoryCard(
-      title: 'Бозгаштҳои охирин',
+      title: l.supplierReturnHistoryTitle,
       child: async.when(
         loading: () => const LoadingState(),
         error: (err, _) => EmptyState(
           icon: Icons.error_outline,
-          title: 'Хатогӣ',
-          message: err is Failure ? err.message : 'Боркунӣ ноком шуд.',
+          title: l.commonError,
+          message: err is Failure ? err.message : l.commonLoadFailed,
           action: FilledButton.tonalIcon(
             onPressed: () => ref.invalidate(supplierReturnHistoryProvider),
             icon: const Icon(Icons.refresh),
-            label: const Text('Аз нав'),
+            label: Text(l.commonRetry),
           ),
         ),
         data: (paged) {
           if (paged.items.isEmpty) {
-            return const EmptyState(message: 'Ҳоло бозгашт сабт нашудааст.');
+            return EmptyState(message: l.supplierReturnHistoryEmpty);
           }
           return AppDataTable(
             minWidth: 520,
-            columns: const [
-              DataColumn2(label: Text('Сана')),
-              DataColumn2(label: Text('Рақам')),
-              DataColumn2(label: Text('Таъминкунанда'), size: ColumnSize.L),
-              DataColumn2(label: Text('Сатрҳо'), numeric: true),
+            columns: [
+              DataColumn2(label: Text(l.opColDate)),
+              DataColumn2(label: Text(l.opColNumber)),
+              DataColumn2(label: Text(l.opColSupplier), size: ColumnSize.L),
+              DataColumn2(label: Text(l.opColLines), numeric: true),
             ],
             rows: [
               for (final r in paged.items)

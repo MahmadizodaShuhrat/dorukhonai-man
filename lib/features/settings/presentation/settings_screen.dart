@@ -3,8 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/locale_provider.dart';
+import '../../../app/theme_mode_provider.dart';
 import '../../../core/api/api_result.dart';
 import '../../../core/config/api_config.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_scaffold.dart';
 import '../../../shared/app_toast.dart';
 import '../../../shared/empty_state.dart';
@@ -24,14 +27,19 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final user = ref.watch(authControllerProvider).user;
     final isAdmin = user?.role == UserRole.admin;
     return AppScaffold(
-      title: 'Танзимот',
+      title: l.settingsTitle,
       icon: Icons.settings,
-      subtitle: 'Сервер · огоҳӣ · нарх · принтер · корбар',
+      subtitle: l.settingsSubtitle,
       body: ListView(
         children: [
+          const _AppearanceSection(),
+          const SizedBox(height: 16),
+          const _LanguageSection(),
+          const SizedBox(height: 16),
           const _ServerSection(),
           const SizedBox(height: 16),
           const _AlertSection(),
@@ -100,6 +108,118 @@ class _SettingsCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// НАМУДИ НАМОИШ (theme)
+// ---------------------------------------------------------------------------
+
+class _AppearanceSection extends ConsumerWidget {
+  const _AppearanceSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final mode = ref.watch(themeModeControllerProvider);
+    final controller = ref.read(themeModeControllerProvider.notifier);
+    return _SettingsCard(
+      title: l.settingsAppearance,
+      icon: Icons.brightness_6_outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l.settingsThemeLabel,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<ThemeMode>(
+            segments: [
+              ButtonSegment(
+                value: ThemeMode.system,
+                label: Text(l.settingsThemeSystem),
+                icon: const Icon(Icons.brightness_auto_outlined),
+              ),
+              ButtonSegment(
+                value: ThemeMode.light,
+                label: Text(l.settingsThemeLight),
+                icon: const Icon(Icons.light_mode_outlined),
+              ),
+              ButtonSegment(
+                value: ThemeMode.dark,
+                label: Text(l.settingsThemeDark),
+                icon: const Icon(Icons.dark_mode_outlined),
+              ),
+            ],
+            selected: {mode},
+            onSelectionChanged: (s) => controller.set(s.first),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l.settingsThemeHint,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ЗАБОН / ЯЗЫК (language)
+// ---------------------------------------------------------------------------
+
+/// Language selector (Тоҷикӣ / Русский), mirroring [_AppearanceSection]. Flips
+/// the app locale via [localeControllerProvider] (persisted via AppPreferences).
+class _LanguageSection extends ConsumerWidget {
+  const _LanguageSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final locale = ref.watch(localeControllerProvider);
+    final controller = ref.read(localeControllerProvider.notifier);
+    final code = locale.languageCode == 'ru' ? 'ru' : 'tg';
+    return _SettingsCard(
+      title: l.settingsLanguage,
+      icon: Icons.translate_outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l.settingsLanguageLabel,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<String>(
+            segments: [
+              ButtonSegment(
+                value: 'tg',
+                label: Text(l.settingsLanguageTajik),
+                icon: const Icon(Icons.language_outlined),
+              ),
+              ButtonSegment(
+                value: 'ru',
+                label: Text(l.settingsLanguageRussian),
+                icon: const Icon(Icons.language_outlined),
+              ),
+            ],
+            selected: {code},
+            onSelectionChanged: (s) => controller.setCode(s.first),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l.settingsLanguageHint,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // СЕРВЕР
 // ---------------------------------------------------------------------------
 
@@ -129,6 +249,7 @@ class _ServerSectionState extends ConsumerState<_ServerSection> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final controller = ref.read(serverConfigProvider.notifier);
     final config = ref.watch(serverConfigProvider);
     final locked = controller.isLocked;
@@ -141,7 +262,7 @@ class _ServerSectionState extends ConsumerState<_ServerSection> {
     }
 
     return _SettingsCard(
-      title: 'Сервер',
+      title: l.settingsServer,
       icon: Icons.dns_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,7 +270,7 @@ class _ServerSectionState extends ConsumerState<_ServerSection> {
           Row(
             children: [
               Text(
-                'URL-и ҷорӣ: ',
+                l.settingsServerCurrentUrl,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               Expanded(
@@ -167,12 +288,12 @@ class _ServerSectionState extends ConsumerState<_ServerSection> {
             controller: _urlController,
             enabled: !locked,
             decoration: InputDecoration(
-              labelText: 'Суроғаи сервер (scheme://host:port/api/v1)',
+              labelText: l.settingsServerField,
               prefixIcon: const Icon(Icons.link, size: 16),
               isDense: true,
               helperText: locked
-                  ? 'Аз --dart-define муайян шуда — таҳрир мумкин нест.'
-                  : 'Мисол: http://192.168.1.10:5000/api/v1',
+                  ? l.settingsServerLocked
+                  : l.settingsServerExample,
             ),
           ),
           const SizedBox(height: 12),
@@ -184,19 +305,19 @@ class _ServerSectionState extends ConsumerState<_ServerSection> {
               FilledButton.icon(
                 onPressed: locked ? null : () => _save(controller),
                 icon: const Icon(Icons.save_outlined, size: 18),
-                label: const Text('Нигоҳ доштан'),
+                label: Text(l.commonSave),
               ),
               OutlinedButton.icon(
                 onPressed: testState == ConnectionTestState.testing
                     ? null
                     : () => ref.read(connectionTestProvider.notifier).test(),
                 icon: const Icon(Icons.wifi_tethering, size: 18),
-                label: const Text('Санҷиши пайваст'),
+                label: Text(l.settingsTestConnection),
               ),
               TextButton.icon(
                 onPressed: locked ? null : () => _reset(controller),
                 icon: const Icon(Icons.restart_alt, size: 18),
-                label: const Text('Барқарор'),
+                label: Text(l.commonRestore),
               ),
               _testBadge(testState),
             ],
@@ -206,43 +327,48 @@ class _ServerSectionState extends ConsumerState<_ServerSection> {
     );
   }
 
-  Widget _testBadge(ConnectionTestState state) => switch (state) {
-    ConnectionTestState.idle => const SizedBox.shrink(),
-    ConnectionTestState.testing => const SizedBox(
-      height: 18,
-      width: 18,
-      child: CircularProgressIndicator(strokeWidth: 2.5),
-    ),
-    ConnectionTestState.ok => const StatusChip(
-      label: 'Пайваст шуд',
-      tone: StatusTone.ok,
-      icon: Icons.check_circle_outline,
-    ),
-    ConnectionTestState.failed => const StatusChip(
-      label: 'Пайваст нашуд',
-      tone: StatusTone.danger,
-      icon: Icons.error_outline,
-    ),
-  };
+  Widget _testBadge(ConnectionTestState state) {
+    final l = AppLocalizations.of(context);
+    return switch (state) {
+      ConnectionTestState.idle => const SizedBox.shrink(),
+      ConnectionTestState.testing => const SizedBox(
+        height: 18,
+        width: 18,
+        child: CircularProgressIndicator(strokeWidth: 2.5),
+      ),
+      ConnectionTestState.ok => StatusChip(
+        label: l.settingsConnected,
+        tone: StatusTone.ok,
+        icon: Icons.check_circle_outline,
+      ),
+      ConnectionTestState.failed => StatusChip(
+        label: l.settingsNotConnected,
+        tone: StatusTone.danger,
+        icon: Icons.error_outline,
+      ),
+    };
+  }
 
   Future<void> _save(ServerConfigController controller) async {
     final normalized = await controller.update(_urlController.text);
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     if (normalized == null) {
-      AppToast.error(context, 'Суроғаи нодуруст. http(s)://host… ворид кунед.');
+      AppToast.error(context, l.settingsInvalidUrl);
     } else {
       _urlController.text = normalized;
       ref.read(connectionTestProvider.notifier).reset();
-      AppToast.success(context, 'Суроғаи сервер нигоҳ дошта шуд.');
+      AppToast.success(context, l.settingsUrlSaved);
     }
   }
 
   Future<void> _reset(ServerConfigController controller) async {
     await controller.reset();
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     _urlController.text = ref.read(serverConfigProvider).baseUrl;
     ref.read(connectionTestProvider.notifier).reset();
-    AppToast.info(context, 'Ба суроғаи пешфарз баргардонида шуд.');
+    AppToast.info(context, l.settingsUrlReset);
   }
 }
 
@@ -255,6 +381,7 @@ class _AlertSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final settings = ref.watch(settingsControllerProvider);
     final controller = ref.read(settingsControllerProvider.notifier);
     const options = [30, 60, 90];
@@ -269,21 +396,21 @@ class _AlertSection extends ConsumerWidget {
                 : b,
           );
     return _SettingsCard(
-      title: 'Огоҳӣ',
+      title: l.settingsAlert,
       icon: Icons.notifications_active_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Уфуқи огоҳии мӯҳлат (рӯз):',
+            l.settingsAlertHorizon,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 12),
           SegmentedButton<int>(
-            segments: const [
-              ButtonSegment(value: 30, label: Text('30 рӯз')),
-              ButtonSegment(value: 60, label: Text('60 рӯз')),
-              ButtonSegment(value: 90, label: Text('90 рӯз')),
+            segments: [
+              ButtonSegment(value: 30, label: Text(l.settingsAlertDays(30))),
+              ButtonSegment(value: 60, label: Text(l.settingsAlertDays(60))),
+              ButtonSegment(value: 90, label: Text(l.settingsAlertDays(90))),
             ],
             selected: {selected},
             onSelectionChanged: (s) => controller.setAlertDays(s.first),
@@ -327,14 +454,15 @@ class _MarkupSectionState extends ConsumerState<_MarkupSection> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return _SettingsCard(
-      title: 'Нарх',
+      title: l.settingsMarkup,
       icon: Icons.percent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Наценкаи пешфарз (барои модули нархгузорӣ):',
+            l.settingsMarkupLabel,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 12),
@@ -350,8 +478,8 @@ class _MarkupSectionState extends ConsumerState<_MarkupSection> {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                   ],
-                  decoration: const InputDecoration(
-                    labelText: 'Наценка %',
+                  decoration: InputDecoration(
+                    labelText: l.settingsMarkupField,
                     isDense: true,
                     suffixText: '%',
                   ),
@@ -365,16 +493,15 @@ class _MarkupSectionState extends ConsumerState<_MarkupSection> {
                   ref
                       .read(settingsControllerProvider.notifier)
                       .setMarkupPercent(value);
-                  AppToast.success(context, 'Наценка нигоҳ дошта шуд.');
+                  AppToast.success(context, l.settingsMarkupSaved);
                 },
-                child: const Text('Нигоҳ доштан'),
+                child: Text(l.commonSave),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            'Эзоҳ: дар сервер нигоҳ дошта мешавад ва ҳамчун наценкаи '
-            'пешфарзи нархи фурӯш ҳангоми приход истифода мешавад.',
+            l.settingsMarkupHint,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -394,20 +521,20 @@ class _PrinterSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return _SettingsCard(
-      title: 'Принтер',
+      title: l.settingsPrinter,
       icon: Icons.print_outlined,
       child: Row(
         children: [
           Expanded(
             child: Text(
-              'Чопи чек тавассути диалоги системавии чоп (printing). '
-              'Интихоби принтери пешфарз дар нусхаи минбаъда илова мешавад.',
+              l.settingsPrinterHint,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
           const SizedBox(width: 12),
-          const StatusChip(label: 'Системавӣ', tone: StatusTone.info),
+          StatusChip(label: l.settingsSystem, tone: StatusTone.info),
         ],
       ),
     );
@@ -423,9 +550,10 @@ class _UserSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final user = ref.watch(authControllerProvider).user;
     return _SettingsCard(
-      title: 'Корбар',
+      title: l.settingsUser,
       icon: Icons.account_circle_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,7 +566,7 @@ class _UserSection extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    user?.fullName ?? 'Корбар',
+                    user?.fullName ?? l.shellUserFallback,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   Text(
@@ -459,7 +587,7 @@ class _UserSection extends ConsumerWidget {
               if (context.mounted) context.go('/login');
             },
             icon: const Icon(Icons.logout, size: 18),
-            label: const Text('Баромадан'),
+            label: Text(l.settingsLogout),
           ),
         ],
       ),
@@ -493,10 +621,11 @@ class _UsersAdminSection extends ConsumerWidget {
       role: form.role,
     );
     if (!context.mounted) return;
+    final l = AppLocalizations.of(context);
     switch (result) {
       case Success():
         ref.invalidate(usersListProvider);
-        AppToast.success(context, 'Корбар илова шуд.');
+        AppToast.success(context, l.settingsUserAdded);
       case Error(:final failure):
         AppToast.error(context, failure.message);
     }
@@ -512,29 +641,31 @@ class _UsersAdminSection extends ConsumerWidget {
       role: form.role,
     );
     if (!context.mounted) return;
+    final l = AppLocalizations.of(context);
     switch (result) {
       case Success():
         ref.invalidate(usersListProvider);
-        AppToast.success(context, 'Корбар таҳрир шуд.');
+        AppToast.success(context, l.settingsUserUpdated);
       case Error(:final failure):
         AppToast.error(context, failure.message);
     }
   }
 
   Future<void> _deactivate(BuildContext context, WidgetRef ref, User user) async {
+    final l = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Ғайрифаъол кардан'),
-        content: Text('«${user.fullName}»-ро ғайрифаъол мекунед?'),
+        title: Text(l.settingsDeactivateTitle),
+        content: Text(l.settingsDeactivateBody(user.fullName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Бекор'),
+            child: Text(l.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Тасдиқ'),
+            child: Text(l.commonConfirm),
           ),
         ],
       ),
@@ -546,7 +677,7 @@ class _UsersAdminSection extends ConsumerWidget {
     switch (result) {
       case Success():
         ref.invalidate(usersListProvider);
-        AppToast.success(context, 'Корбар ғайрифаъол шуд.');
+        AppToast.success(context, l.settingsUserDeactivated);
       case Error(:final failure):
         AppToast.error(context, failure.message);
     }
@@ -554,9 +685,10 @@ class _UsersAdminSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final async = ref.watch(usersListProvider);
     return _SettingsCard(
-      title: 'Корбарон',
+      title: l.settingsUsers,
       icon: Icons.group_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -566,7 +698,7 @@ class _UsersAdminSection extends ConsumerWidget {
             child: FilledButton.icon(
               onPressed: () => _create(context, ref),
               icon: const Icon(Icons.person_add_alt, size: 18),
-              label: const Text('Корбари нав'),
+              label: Text(l.settingsNewUser),
             ),
           ),
           const SizedBox(height: 12),
@@ -576,17 +708,17 @@ class _UsersAdminSection extends ConsumerWidget {
               loading: () => const LoadingState(),
               error: (err, _) => EmptyState(
                 icon: Icons.error_outline,
-                title: 'Хатогӣ',
-                message: err is Failure ? err.message : 'Боркунӣ ноком шуд.',
+                title: l.commonError,
+                message: err is Failure ? err.message : l.commonLoadFailed,
                 action: FilledButton.tonalIcon(
                   onPressed: () => ref.invalidate(usersListProvider),
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Аз нав'),
+                  label: Text(l.commonRetry),
                 ),
               ),
               data: (users) {
                 if (users.isEmpty) {
-                  return const EmptyState(message: 'Корбар нест');
+                  return EmptyState(message: l.settingsNoUsers);
                 }
                 return ListView.separated(
                   itemCount: users.length,
@@ -603,12 +735,12 @@ class _UsersAdminSection extends ConsumerWidget {
                         children: [
                           StatusChip(label: u.role.wire, tone: StatusTone.info),
                           IconButton(
-                            tooltip: 'Таҳрир',
+                            tooltip: l.settingsEditTooltip,
                             icon: const Icon(Icons.edit_outlined, size: 18),
                             onPressed: () => _edit(context, ref, u),
                           ),
                           IconButton(
-                            tooltip: 'Ғайрифаъол',
+                            tooltip: l.settingsDeactivateTooltip,
                             icon: const Icon(Icons.person_off_outlined, size: 18),
                             onPressed: () => _deactivate(context, ref, u),
                           ),
@@ -700,8 +832,9 @@ class _UserFormDialogState extends State<UserFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return AlertDialog(
-      title: Text(_isEdit ? 'Таҳрири корбар' : 'Корбари нав'),
+      title: Text(_isEdit ? l.settingsEditUser : l.settingsNewUser),
       content: SizedBox(
         width: 380,
         child: Form(
@@ -712,42 +845,42 @@ class _UserFormDialogState extends State<UserFormDialog> {
               TextFormField(
                 controller: _fullName,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Ному насаб *',
+                decoration: InputDecoration(
+                  labelText: l.settingsFullName,
                   isDense: true,
                 ),
                 validator: (v) =>
-                    (v ?? '').trim().isEmpty ? 'Ҳатмист' : null,
+                    (v ?? '').trim().isEmpty ? l.commonRequired : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _userName,
                 enabled: !_isEdit,
-                decoration: const InputDecoration(
-                  labelText: 'Номи корбар (login) *',
+                decoration: InputDecoration(
+                  labelText: l.settingsUserName,
                   isDense: true,
                 ),
                 validator: (v) =>
-                    (v ?? '').trim().isEmpty ? 'Ҳатмист' : null,
+                    (v ?? '').trim().isEmpty ? l.commonRequired : null,
               ),
               if (!_isEdit) ...[
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _password,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Парол *',
+                  decoration: InputDecoration(
+                    labelText: l.settingsPassword,
                     isDense: true,
                   ),
                   validator: (v) =>
-                      (v ?? '').length < 4 ? 'Камаш 4 аломат' : null,
+                      (v ?? '').length < 4 ? l.settingsPasswordMin : null,
                 ),
               ],
               const SizedBox(height: 12),
               DropdownButtonFormField<UserRole>(
                 initialValue: _role,
-                decoration: const InputDecoration(
-                  labelText: 'Нақш *',
+                decoration: InputDecoration(
+                  labelText: l.settingsRole,
                   isDense: true,
                 ),
                 items: [
@@ -763,11 +896,11 @@ class _UserFormDialogState extends State<UserFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Бекор'),
+          child: Text(l.commonCancel),
         ),
         FilledButton(
           onPressed: _submit,
-          child: Text(_isEdit ? 'Нигоҳ доштан' : 'Илова'),
+          child: Text(_isEdit ? l.commonSave : l.commonAdd),
         ),
       ],
     );
@@ -783,15 +916,15 @@ class _AboutSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return _SettingsCard(
-      title: 'Дар бораи',
+      title: l.settingsAbout,
       icon: Icons.info_outline,
       child: Row(
         children: [
           Expanded(
             child: Text(
-              
-              'Дорухона — Касса/Анбор · v1.0.0',
+              l.settingsAboutText,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),

@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
 
 Widget _host(FakeAuthRepository repo) {
   final router = GoRouter(
@@ -24,7 +25,7 @@ Widget _host(FakeAuthRepository repo) {
   );
   return ProviderScope(
     overrides: [authRepositoryProvider.overrideWithValue(repo)],
-    child: MaterialApp.router(routerConfig: router),
+    child: localizedRouterApp(router),
   );
 }
 

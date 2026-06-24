@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_result.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../pos/data/pos_models.dart';
 import '../../stock/data/stock_models.dart';
 import '../data/report_models.dart';
@@ -9,16 +10,20 @@ import '../data/reports_repository.dart';
 
 /// The available report views shown in the left rail (TZ_03 §C.6).
 enum ReportKind {
-  sales('Фурӯш'),
-  profit('Фоида'),
-  stockValue('Арзиши анбор'),
-  expiring('Мӯҳлаташ наздик'),
-  zReport('Z-ҳисобот');
+  sales,
+  profit,
+  stockValue,
+  expiring,
+  zReport;
 
-  const ReportKind(this.label);
-
-  /// Tajik UI label for the rail.
-  final String label;
+  /// Localized UI label for the rail.
+  String label(AppLocalizations l) => switch (this) {
+    ReportKind.sales => l.reportViewSales,
+    ReportKind.profit => l.reportViewProfit,
+    ReportKind.stockValue => l.reportViewStockValue,
+    ReportKind.expiring => l.reportViewExpiring,
+    ReportKind.zReport => l.reportViewZReport,
+  };
 }
 
 /// An inclusive date range for date-windowed reports.

@@ -2,6 +2,7 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../products/data/product_models.dart';
 import 'reference_list_provider.dart';
 import 'widgets/reference_list_view.dart';
@@ -12,18 +13,19 @@ class SuppliersScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return ReferenceListView<Supplier>(
-      title: 'Таъминкунандагон',
+      title: l.refSuppliersTitle,
       icon: Icons.local_shipping_outlined,
-      newButtonLabel: 'Таъминкунандаи нав',
-      searchHint: 'Ҷустуҷӯи таъминкунанда…',
-      emptyMessage: 'Таъминкунанда ёфт нашуд',
-      entityName: 'таъминкунанда',
+      newButtonLabel: l.refSupplierNew,
+      searchHint: l.refSupplierSearchHint,
+      emptyMessage: l.refSupplierEmpty,
+      entityName: l.refSupplierEntity,
       provider: suppliersListControllerProvider,
-      columns: const [
-        DataColumn2(label: Text('Ном'), size: ColumnSize.L),
-        DataColumn2(label: Text('ИНН')),
-        DataColumn2(label: Text('Телефон')),
+      columns: [
+        DataColumn2(label: Text(l.refColName), size: ColumnSize.L),
+        DataColumn2(label: Text(l.refColInn)),
+        DataColumn2(label: Text(l.refColPhone)),
       ],
       cells: (context, s) => [
         DataCell(Text(s.name)),
@@ -94,12 +96,11 @@ class _SupplierEditorState extends ConsumerState<_SupplierEditor> {
         ? await _controller.update(value)
         : await _controller.create(value);
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     handleReferenceSave(
       context,
       result,
-      successMessage: _isEditing
-          ? 'Таъминкунанда навсозӣ шуд'
-          : 'Таъминкунанда сохта шуд',
+      successMessage: _isEditing ? l.refSupplierUpdated : l.refSupplierCreated,
       onSuccess: widget.onDone,
     );
   }
@@ -110,16 +111,18 @@ class _SupplierEditorState extends ConsumerState<_SupplierEditor> {
     if (!await confirmReferenceDelete(context, item.name)) return;
     final result = await _controller.delete(item.id);
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     handleReferenceSave(
       context,
       result,
-      successMessage: 'Таъминкунанда ҳазф шуд',
+      successMessage: l.refSupplierDeleted,
       onSuccess: widget.onDone,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final isSaving = ref.watch(
       suppliersListControllerProvider.select((s) => s.isSaving),
     );
@@ -132,21 +135,20 @@ class _SupplierEditorState extends ConsumerState<_SupplierEditor> {
             controller: _name,
             autofocus: true,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'Ном *',
-              prefixIcon: Icon(Icons.local_shipping_outlined),
+            decoration: InputDecoration(
+              labelText: l.refFieldName,
+              prefixIcon: const Icon(Icons.local_shipping_outlined),
             ),
-            validator: (v) => (v == null || v.trim().isEmpty)
-                ? 'Номи таъминкунандаро ворид кунед'
-                : null,
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? l.refSupplierValName : null,
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _inn,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'ИНН',
-              prefixIcon: Icon(Icons.badge_outlined),
+            decoration: InputDecoration(
+              labelText: l.refColInn,
+              prefixIcon: const Icon(Icons.badge_outlined),
             ),
           ),
           const SizedBox(height: 16),
@@ -154,18 +156,18 @@ class _SupplierEditorState extends ConsumerState<_SupplierEditor> {
             controller: _phone,
             textInputAction: TextInputAction.next,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Телефон',
-              prefixIcon: Icon(Icons.phone_outlined),
+            decoration: InputDecoration(
+              labelText: l.refColPhone,
+              prefixIcon: const Icon(Icons.phone_outlined),
             ),
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _address,
             maxLines: 2,
-            decoration: const InputDecoration(
-              labelText: 'Суроға',
-              prefixIcon: Icon(Icons.location_on_outlined),
+            decoration: InputDecoration(
+              labelText: l.refFieldAddress,
+              prefixIcon: const Icon(Icons.location_on_outlined),
             ),
             onFieldSubmitted: (_) => _save(),
           ),

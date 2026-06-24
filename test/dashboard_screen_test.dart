@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
 
 /// Finds the [StatusChip] whose label is [label] and returns its tone.
 StatusTone _chipTone(WidgetTester tester, String label) {
@@ -31,7 +32,7 @@ Widget _host({
       posRepositoryProvider.overrideWithValue(pos),
       stockRepositoryProvider.overrideWithValue(stock),
     ],
-    child: const MaterialApp(home: Scaffold(body: DashboardScreen())),
+    child: localizedApp(const Scaffold(body: DashboardScreen())),
   );
 }
 

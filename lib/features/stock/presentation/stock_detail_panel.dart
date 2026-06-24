@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/status_colors.dart';
 import '../../../core/api/api_result.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/status_chip.dart';
 import '../data/stock_models.dart';
 import 'stock_provider.dart';
@@ -28,6 +29,7 @@ class StockDetailPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     // Batches for this product, taken from the loaded on-hand page (no extra
     // endpoint — the contract has no per-product batch list).
     final batches = [
@@ -53,7 +55,7 @@ class StockDetailPanel extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Пӯшидан',
+                  tooltip: l.commonClose,
                   icon: const Icon(Icons.close),
                   onPressed: onClose,
                 ),
@@ -65,11 +67,11 @@ class StockDetailPanel extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               children: [
-                _SectionLabel(text: 'Партияҳо (${batches.length})'),
+                _SectionLabel(text: l.stockBatchesCount(batches.length)),
                 const SizedBox(height: 8),
                 if (batches.isEmpty)
                   Text(
-                    'Дар саҳифаи ҷорӣ партия нест.',
+                    l.stockNoBatchesOnPage,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -77,7 +79,7 @@ class StockDetailPanel extends ConsumerWidget {
                 else
                   for (final b in batches) _BatchTile(item: b),
                 const SizedBox(height: 20),
-                _SectionLabel(text: 'Ҳаракати дору'),
+                _SectionLabel(text: l.stockMovementsTitle),
                 const SizedBox(height: 8),
                 movements.when(
                   loading: () => const Padding(
@@ -92,7 +94,7 @@ class StockDetailPanel extends ConsumerWidget {
                   ),
                   data: (list) => list.isEmpty
                       ? Text(
-                          'Ҳаракат нест',
+                          l.stockNoMovements,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -121,6 +123,7 @@ class _BatchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     final days = item.daysUntilExpiry();
     final (tone, _) = expiryTone(days);
     return Padding(
@@ -141,7 +144,7 @@ class _BatchTile extends StatelessWidget {
               ],
             ),
           ),
-          StatusChip(label: expiryLabel(days), tone: tone, dense: true),
+          StatusChip(label: expiryLabel(l, days), tone: tone, dense: true),
           const SizedBox(width: 8),
           Text(
             formatQuantity(item.quantity),
@@ -162,6 +165,7 @@ class _MovementTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = StatusColors.of(context);
+    final l = AppLocalizations.of(context);
     final isInbound = movement.quantity >= 0;
     final color = isInbound ? status.ok : status.danger;
     return Padding(
@@ -178,7 +182,7 @@ class _MovementTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(movementTypeLabel(movement.type)),
+                Text(movementTypeLabel(l, movement.type)),
                 Text(
                   [
                     if (movement.documentType != null) movement.documentType!,
@@ -233,6 +237,7 @@ class _MovementsError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -244,32 +249,32 @@ class _MovementsError extends StatelessWidget {
         FilledButton.tonalIcon(
           onPressed: onRetry,
           icon: const Icon(Icons.refresh),
-          label: const Text('Аз нав'),
+          label: Text(l.commonRetry),
         ),
       ],
     );
   }
 }
 
-/// Maps a raw `MovementType` wire value to a Tajik label (TZ_03 §C.3 "ledger
-/// with MovementType labels"). Falls back to the raw value when unknown.
-String movementTypeLabel(String type) {
+/// Maps a raw `MovementType` wire value to a localized label (TZ_03 §C.3
+/// "ledger with MovementType labels"). Falls back to the raw value when unknown.
+String movementTypeLabel(AppLocalizations l, String type) {
   switch (type) {
     case 'Receipt':
     case 'Inbound':
     case 'Приход':
-      return 'Приход';
+      return l.movementReceipt;
     case 'Sale':
-      return 'Фурӯш';
+      return l.movementSale;
     case 'Return':
-      return 'Бозгашт';
+      return l.movementReturn;
     case 'WriteOff':
     case 'Списание':
-      return 'Списание';
+      return l.movementWriteOff;
     case 'Adjustment':
-      return 'Тасҳеҳ';
+      return l.movementAdjustment;
     case 'Transfer':
-      return 'Интиқол';
+      return l.movementTransfer;
     default:
       return type;
   }

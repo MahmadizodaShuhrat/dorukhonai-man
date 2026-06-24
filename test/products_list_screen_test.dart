@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
 
 Widget _host(FakeProductsRepository repo, {FakeReferenceRepository? refRepo}) {
   return ProviderScope(
@@ -19,7 +20,7 @@ Widget _host(FakeProductsRepository repo, {FakeReferenceRepository? refRepo}) {
       ),
     ],
     // AppScaffold renders inside the shell (a Column), so host it in a Scaffold.
-    child: const MaterialApp(home: Scaffold(body: ProductsListScreen())),
+    child: localizedApp(const Scaffold(body: ProductsListScreen())),
   );
 }
 

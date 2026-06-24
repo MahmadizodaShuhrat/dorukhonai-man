@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'pos_support.dart';
+import 'support/l10n_harness.dart';
 
 /// Hosts [PosScreen] with fake POS + products + branch repositories (no
 /// network). The fake branch resolves to `br-1` (matching `sampleShift`).
@@ -29,7 +30,7 @@ Widget _host(FakePosRepository pos, {FakeProductsRepository? products}) {
             const Branch(id: 'br-1', name: 'Дорухонаи марказӣ', isCentral: true),
       ),
     ],
-    child: const MaterialApp(home: PosScreen()),
+    child: localizedApp(const PosScreen()),
   );
 }
 

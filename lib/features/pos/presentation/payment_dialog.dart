@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/pos_models.dart';
 
 /// Result of the payment dialog: the chosen tenders. The cart-level discount is
@@ -74,9 +75,10 @@ class _PaymentDialogState extends State<PaymentDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return AlertDialog(
-      title: const Text('Пардохт'),
+      title: Text(l.payTitle),
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
         child: Column(
@@ -84,26 +86,26 @@ class _PaymentDialogState extends State<PaymentDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Барои пардохт: ${Formatters.money(widget.total)}',
+              l.payForPayment(Formatters.money(widget.total)),
               style: theme.textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
             SegmentedButton<PaymentMethod>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: PaymentMethod.cash,
-                  label: Text('Нақд'),
-                  icon: Icon(Icons.payments_outlined),
+                  label: Text(l.paymentMethodCash),
+                  icon: const Icon(Icons.payments_outlined),
                 ),
                 ButtonSegment(
                   value: PaymentMethod.card,
-                  label: Text('Корт'),
-                  icon: Icon(Icons.credit_card),
+                  label: Text(l.paymentMethodCard),
+                  icon: const Icon(Icons.credit_card),
                 ),
                 ButtonSegment(
                   value: PaymentMethod.credit,
-                  label: Text('Қарз'),
-                  icon: Icon(Icons.account_balance_wallet_outlined),
+                  label: Text(l.paymentMethodCredit),
+                  icon: const Icon(Icons.account_balance_wallet_outlined),
                 ),
               ],
               selected: {_method},
@@ -119,10 +121,10 @@ class _PaymentDialogState extends State<PaymentDialog> {
               enabled: _isCash,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Маблағи додашуда',
-                prefixIcon: Icon(Icons.attach_money),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l.payAmountGiven,
+                prefixIcon: const Icon(Icons.attach_money),
+                border: const OutlineInputBorder(),
               ),
               onChanged: (_) => setState(() {}),
               onSubmitted: (_) => _submit(),
@@ -132,7 +134,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Қайтарма:'),
+                  Text(l.payChange),
                   Text(
                     Formatters.money(_change),
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -148,12 +150,12 @@ class _PaymentDialogState extends State<PaymentDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Бекор'),
+          child: Text(l.commonCancel),
         ),
         FilledButton.icon(
           onPressed: _canPay ? _submit : null,
           icon: const Icon(Icons.check),
-          label: const Text('Тасдиқ'),
+          label: Text(l.commonConfirm),
         ),
       ],
     );

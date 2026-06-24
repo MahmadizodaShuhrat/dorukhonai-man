@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../app/status_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_scaffold.dart';
 import '../../../shared/empty_state.dart';
 import '../../../shared/loading_state.dart';
@@ -22,13 +23,14 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     return AppScaffold(
-      title: 'Дашборд',
+      title: l.dashTitle,
       icon: Icons.dashboard_outlined,
-      subtitle: 'Имрӯз, ${Formatters.date(DateTime.now())}',
+      subtitle: l.dashSubtitleToday(Formatters.date(DateTime.now())),
       actions: [
         IconButton(
-          tooltip: 'Навсозӣ',
+          tooltip: l.commonRefresh,
           icon: const Icon(Icons.refresh),
           onPressed: () => _refreshAll(ref),
         ),
@@ -68,6 +70,7 @@ class _KpiRow extends ConsumerWidget {
     final low = ref.watch(lowStockProvider);
     final shift = ref.watch(currentShiftProvider);
     final status = StatusColors.of(context);
+    final l = AppLocalizations.of(context);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -84,7 +87,7 @@ class _KpiRow extends ConsumerWidget {
             SizedBox(
               width: cardWidth,
               child: _KpiCard(
-                label: 'ФУРӮШИ ИМРӮЗ',
+                label: l.dashKpiTodaySales,
                 icon: Icons.point_of_sale_outlined,
                 onTap: () => context.go(AppRoutes.pos),
                 child: today.when(
@@ -92,7 +95,7 @@ class _KpiRow extends ConsumerWidget {
                   error: (_, _) => const _KpiError(),
                   data: (d) => _KpiValue(
                     value: Formatters.money(d.total),
-                    caption: '${d.count} чек',
+                    caption: l.dashKpiReceiptsCount(d.count),
                   ),
                 ),
               ),
@@ -100,7 +103,7 @@ class _KpiRow extends ConsumerWidget {
             SizedBox(
               width: cardWidth,
               child: _KpiCard(
-                label: 'МӮҲЛАТАШ НАЗДИК ($kExpiringWindowDays' 'р)',
+                label: l.dashKpiExpiringSoon(kExpiringWindowDays),
                 icon: Icons.event_busy_outlined,
                 accent: status.warn,
                 onTap: () => context.go(AppRoutes.stock),
@@ -109,7 +112,7 @@ class _KpiRow extends ConsumerWidget {
                   error: (_, _) => const _KpiError(),
                   data: (p) => _KpiValue(
                     value: '${p.total}',
-                    caption: 'дору',
+                    caption: l.dashKpiDrugUnit,
                     valueColor: p.total > 0 ? status.warn : null,
                   ),
                 ),
@@ -118,7 +121,7 @@ class _KpiRow extends ConsumerWidget {
             SizedBox(
               width: cardWidth,
               child: _KpiCard(
-                label: 'КАМШУДА (зери мин.)',
+                label: l.dashKpiLowStock,
                 icon: Icons.trending_down_outlined,
                 accent: status.danger,
                 onTap: () => context.go(AppRoutes.stock),
@@ -127,7 +130,7 @@ class _KpiRow extends ConsumerWidget {
                   error: (_, _) => const _KpiError(),
                   data: (p) => _KpiValue(
                     value: '${p.total}',
-                    caption: 'дору',
+                    caption: l.dashKpiDrugUnit,
                     valueColor: p.total > 0 ? status.danger : null,
                   ),
                 ),
@@ -136,7 +139,7 @@ class _KpiRow extends ConsumerWidget {
             SizedBox(
               width: cardWidth,
               child: _KpiCard(
-                label: 'СМЕНА',
+                label: l.dashKpiShift,
                 icon: Icons.access_time_outlined,
                 onTap: () => context.go(AppRoutes.pos),
                 child: shift.when(
@@ -265,6 +268,7 @@ class _ShiftValue extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final status = StatusColors.of(context);
+    final l = AppLocalizations.of(context);
     final open = shift != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,7 +278,7 @@ class _ShiftValue extends StatelessWidget {
             Icon(Icons.circle, size: 12, color: open ? status.ok : theme.colorScheme.outline),
             const SizedBox(width: 6),
             Text(
-              open ? 'Кушода' : 'Баста',
+              open ? l.dashShiftOpen : l.dashShiftClosed,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: open ? status.ok : theme.colorScheme.onSurfaceVariant,
@@ -284,7 +288,7 @@ class _ShiftValue extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          open ? Formatters.dateTime(shift!.openedAt) : 'Смена кушода нашуда',
+          open ? Formatters.dateTime(shift!.openedAt) : l.dashShiftNotOpen,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -318,12 +322,13 @@ class _KpiError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return SizedBox(
       height: 40,
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          '— хато',
+          l.dashKpiErrorShort,
           style: TextStyle(color: StatusColors.of(context).danger),
         ),
       ),
@@ -356,7 +361,12 @@ class _AlertsRow extends StatelessWidget {
             ],
           );
         }
-        return const IntrinsicHeight(
+        // Fixed-height row (not IntrinsicHeight): the cards contain scrolling
+        // ListViews (viewports), whose intrinsic height cannot be measured —
+        // IntrinsicHeight would crash. A bounded height lets each card's inner
+        // list scroll within it.
+        return const SizedBox(
+          height: 360,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -380,12 +390,13 @@ class _ExpiringCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final expiring = ref.watch(expiringStockProvider);
     final status = StatusColors.of(context);
+    final l = AppLocalizations.of(context);
     return _SectionCard(
-      title: 'Мӯҳлаташ наздик',
+      title: l.dashExpiringTitle,
       icon: Icons.warning_amber_rounded,
       iconColor: status.warn,
       footer: _SeeAllButton(
-        label: 'Ҳамаро дидан → Анбор',
+        label: l.dashSeeAllStock,
         onPressed: () => context.go(AppRoutes.stock),
       ),
       child: expiring.when(
@@ -394,9 +405,9 @@ class _ExpiringCard extends ConsumerWidget {
         data: (paged) {
           final rows = _sortedByExpiry(paged.items).take(kPreviewRows).toList();
           if (rows.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.verified_outlined,
-              message: 'Дорумӯҳлаташ наздик нест.',
+              message: l.dashNoExpiring,
             );
           }
           return Column(
@@ -430,6 +441,7 @@ class _ExpiringHeaderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final style = Theme.of(context).textTheme.labelSmall?.copyWith(
           color: Theme.of(context).colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w600,
@@ -438,12 +450,12 @@ class _ExpiringHeaderRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Expanded(flex: 4, child: Text('Дору', style: style)),
-          Expanded(flex: 2, child: Text('Серия', style: style)),
-          Expanded(flex: 3, child: Text('Мӯҳлат', style: style)),
+          Expanded(flex: 4, child: Text(l.dashColDrug, style: style)),
+          Expanded(flex: 2, child: Text(l.dashColSeries, style: style)),
+          Expanded(flex: 3, child: Text(l.dashColExpiry, style: style)),
           Expanded(
             flex: 2,
-            child: Text('Бақия', style: style, textAlign: TextAlign.right),
+            child: Text(l.dashColRemaining, style: style, textAlign: TextAlign.right),
           ),
         ],
       ),
@@ -458,8 +470,9 @@ class _ExpiringRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final days = item.daysUntilExpiry();
-    final (tone, label) = _expiryTone(days);
+    final (tone, label) = _expiryTone(l, days);
     final theme = Theme.of(context);
     return InkWell(
       onTap: () => context.go(AppRoutes.stock),
@@ -516,12 +529,13 @@ class _LowStockCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final low = ref.watch(lowStockProvider);
     final status = StatusColors.of(context);
+    final l = AppLocalizations.of(context);
     return _SectionCard(
-      title: 'Камшуда',
+      title: l.dashLowStockTitle,
       icon: Icons.production_quantity_limits_outlined,
       iconColor: status.danger,
       footer: _SeeAllButton(
-        label: 'Ҳамаро дидан → Анбор',
+        label: l.dashSeeAllStock,
         onPressed: () => context.go(AppRoutes.stock),
       ),
       child: low.when(
@@ -530,9 +544,9 @@ class _LowStockCard extends ConsumerWidget {
         data: (paged) {
           final rows = paged.items.take(kPreviewRows).toList();
           if (rows.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.inventory_2_outlined,
-              message: 'Дорумкамшуда нест.',
+              message: l.dashNoLowStock,
             );
           }
           return ListView.separated(
@@ -608,8 +622,9 @@ class _QuickActionsCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final shift = ref.watch(currentShiftProvider);
     final shiftOpen = shift.maybeWhen(data: (s) => s != null, orElse: () => false);
+    final l = AppLocalizations.of(context);
     return _SectionCard(
-      title: 'Амалҳои зуд',
+      title: l.dashQuickActions,
       icon: Icons.bolt_outlined,
       expandChild: false,
       child: Column(
@@ -617,25 +632,25 @@ class _QuickActionsCard extends ConsumerWidget {
         children: [
           _QuickAction(
             icon: Icons.add,
-            label: 'Приходи нав',
+            label: l.dashQuickNewReceipt,
             onPressed: () => context.go(AppRoutes.receipts),
           ),
           const SizedBox(height: 10),
           _QuickAction(
             icon: shiftOpen ? Icons.lock_clock_outlined : Icons.play_arrow_outlined,
-            label: shiftOpen ? 'Бастани смена' : 'Кушодани смена',
+            label: shiftOpen ? l.dashQuickCloseShift : l.dashQuickOpenShift,
             onPressed: () => context.go(AppRoutes.pos),
           ),
           const SizedBox(height: 10),
           _QuickAction(
             icon: Icons.point_of_sale_outlined,
-            label: 'Фурӯш',
+            label: l.dashQuickSale,
             onPressed: () => context.go(AppRoutes.pos),
           ),
           const SizedBox(height: 10),
           _QuickAction(
             icon: Icons.search,
-            label: 'Ҷустуҷӯи дору',
+            label: l.dashQuickSearchDrug,
             onPressed: () => context.go(AppRoutes.stock),
           ),
         ],
@@ -680,10 +695,11 @@ class _SalesTrendCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trend = ref.watch(salesTrendProvider);
+    final l = AppLocalizations.of(context);
     return SizedBox(
       height: 240,
       child: _SectionCard(
-        title: 'Фурӯш — 7 рӯзи охир',
+        title: l.dashSalesTrendTitle,
         icon: Icons.bar_chart_outlined,
         child: trend.when(
           loading: () => const LoadingState(),
@@ -691,9 +707,9 @@ class _SalesTrendCard extends ConsumerWidget {
               _SectionError(onRetry: () => ref.invalidate(salesTrendProvider)),
           data: (days) {
             if (days.every((d) => d.total == 0)) {
-              return const EmptyState(
+              return EmptyState(
                 icon: Icons.show_chart_outlined,
-                message: 'Дар 7 рӯзи охир фурӯш сабт нашудааст.',
+                message: l.dashNoSalesTrend,
               );
             }
             return _SalesBarChart(days: days);
@@ -712,8 +728,9 @@ class _SalesBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     final maxY = days.fold<double>(0, (m, d) => d.total > m ? d.total : m);
-    final dow = ['Дш', 'Сш', 'Чш', 'Пш', 'Ҷм', 'Шб', 'Яш'];
+    final dow = [l.dowMon, l.dowTue, l.dowWed, l.dowThu, l.dowFri, l.dowSat, l.dowSun];
 
     return Padding(
       padding: const EdgeInsets.only(top: 12, right: 8),
@@ -897,14 +914,15 @@ class _SectionError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return EmptyState(
       icon: Icons.error_outline,
-      title: 'Хатогӣ',
-      message: 'Маълумотро бор карда нашуд.',
+      title: l.commonError,
+      message: l.commonLoadDataFailed,
       action: FilledButton.tonalIcon(
         onPressed: onRetry,
         icon: const Icon(Icons.refresh),
-        label: const Text('Аз нав'),
+        label: Text(l.commonRetry),
       ),
     );
   }
@@ -912,11 +930,11 @@ class _SectionError extends StatelessWidget {
 
 /// Days-to-expiry → (chip tone, label). Mirrors the stock scale (TZ_03 §B.2):
 /// `<0` gone (red), `0–30` near (red), `31–90` soon (amber), `>90` ok (green).
-(StatusTone, String) _expiryTone(int days) {
-  if (days < 0) return (StatusTone.danger, 'гузашта');
-  if (days <= 30) return (StatusTone.danger, '$days' 'р');
-  if (days <= 90) return (StatusTone.warn, '$days' 'р');
-  return (StatusTone.ok, '$days' 'р');
+(StatusTone, String) _expiryTone(AppLocalizations l, int days) {
+  if (days < 0) return (StatusTone.danger, l.dashExpiryGone);
+  if (days <= 30) return (StatusTone.danger, l.dashExpiryDays(days));
+  if (days <= 90) return (StatusTone.warn, l.dashExpiryDays(days));
+  return (StatusTone.ok, l.dashExpiryDays(days));
 }
 
 /// Compact quantity: drops a trailing `.0` for whole numbers.

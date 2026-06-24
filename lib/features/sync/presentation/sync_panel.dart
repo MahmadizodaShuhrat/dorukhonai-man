@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/db/app_database.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_toast.dart';
 import '../../../shared/empty_state.dart';
 import '../../../shared/status_chip.dart';
@@ -26,6 +27,7 @@ class SyncPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final conn = ref.watch(connectivityControllerProvider);
     final rowsAsync = ref.watch(conflictSalesProvider);
@@ -51,7 +53,7 @@ class SyncPanel extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Синхронизатсия',
+                      l.syncTitle,
                       style: theme.textTheme.titleLarge,
                     ),
                   ),
@@ -65,25 +67,25 @@ class SyncPanel extends ConsumerWidget {
               Row(
                 children: [
                   StatusChip(
-                    label: conn.isOnline ? 'Онлайн' : 'Офлайн',
+                    label: conn.isOnline ? l.syncOnline : l.syncOffline,
                     tone: conn.isOnline ? StatusTone.ok : StatusTone.warn,
                   ),
                   const SizedBox(width: 8),
                   StatusChip(
-                    label: '$pending дар навбат',
+                    label: l.syncInQueue(pending),
                     tone: pending > 0 ? StatusTone.warn : StatusTone.info,
                   ),
                   const Spacer(),
                   FilledButton.icon(
                     icon: const Icon(Icons.sync, size: 18),
-                    label: const Text('Синхрон кардан'),
+                    label: Text(l.syncNow),
                     onPressed: () => _syncNow(context, ref),
                   ),
                 ],
               ),
               const Divider(height: 24),
               Text(
-                'Низоъҳо (conflict)',
+                l.syncConflictsTitle,
                 style: theme.textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
@@ -91,13 +93,12 @@ class SyncPanel extends ConsumerWidget {
                 child: rowsAsync.when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Text('Хато: $e'),
+                  error: (e, _) => Text(l.syncError('$e')),
                   data: (rows) => rows.isEmpty
-                      ? const EmptyState(
+                      ? EmptyState(
                           icon: Icons.check_circle_outline,
-                          title: 'Низоъ нест',
-                          message: 'Ҳама фурӯшҳои офлайн бомуваффақият '
-                              'синхрон шуданд.',
+                          title: l.syncNoConflictsTitle,
+                          message: l.syncNoConflictsBody,
                         )
                       : ListView.separated(
                           shrinkWrap: true,
@@ -118,10 +119,11 @@ class SyncPanel extends ConsumerWidget {
   Future<void> _syncNow(BuildContext context, WidgetRef ref) async {
     final outcome = await ref.read(syncCoordinatorProvider).syncNow();
     if (!context.mounted) return;
+    final l = AppLocalizations.of(context);
     final p = outcome.push;
     AppToast.info(
       context,
-      'Синхрон: ${p.pushed} қабул, ${p.conflicts} низоъ, ${p.failed} нашуд.',
+      l.syncResult(p.pushed, p.conflicts, p.failed),
     );
   }
 }
@@ -132,23 +134,24 @@ class _ConflictTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-      title: Text('Фурӯш ${Formatters.dateTime(sale.createdAt)}'),
+      title: Text(l.syncSaleAt(Formatters.dateTime(sale.createdAt))),
       subtitle: Text(
-        sale.conflictMessage ?? 'Бақия дар сервер нарасид.',
+        sale.conflictMessage ?? l.syncConflictFallback,
         style: theme.textTheme.bodySmall,
       ),
       trailing: TextButton(
         onPressed: () async {
           await ref.read(cacheDaoProvider).dropConflict(sale.clientId);
           if (context.mounted) {
-            AppToast.info(context, 'Низоъ рад карда шуд.');
+            AppToast.info(context, l.syncDismissed);
           }
         },
-        child: const Text('Рад кардан'),
+        child: Text(l.syncDismiss),
       ),
     );
   }

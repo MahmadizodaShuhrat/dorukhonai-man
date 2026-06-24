@@ -4,6 +4,7 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/app_data_table.dart';
 import '../../../../shared/app_scaffold.dart';
 import '../../../../shared/app_toast.dart';
@@ -101,13 +102,14 @@ class _ReferenceListViewState<T> extends ConsumerState<ReferenceListView<T>> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final state = ref.watch(widget.provider);
     final controller = ref.read(widget.provider.notifier);
 
     return AppScaffold(
       title: widget.title,
       icon: widget.icon,
-      subtitle: 'Ҳамагӣ: ${state.total}',
+      subtitle: l.commonTotalCount(state.total),
       actions: [
         PrimaryButton(
           label: widget.newButtonLabel,
@@ -179,8 +181,8 @@ class _ReferenceListViewState<T> extends ConsumerState<ReferenceListView<T>> {
           if (_editorOpen)
             SidePanel(
               title: _editing == null
-                  ? '${widget.entityName} нав'
-                  : 'Таҳрири ${widget.entityName}',
+                  ? l.refEntityNew(widget.entityName)
+                  : l.refEntityEdit(widget.entityName),
               onClose: _closePanel,
               child: widget.editorBuilder(context, _editing, _closePanel),
             ),
@@ -244,19 +246,20 @@ class _PaginationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           IconButton(
-            tooltip: 'Қаблӣ',
+            tooltip: l.commonPrevious,
             icon: const Icon(Icons.chevron_left),
             onPressed: hasPrevious ? onPrevious : null,
           ),
           Text('$page / $pageCount'),
           IconButton(
-            tooltip: 'Баъдӣ',
+            tooltip: l.commonNext,
             icon: const Icon(Icons.chevron_right),
             onPressed: hasNext ? onNext : null,
           ),
@@ -284,12 +287,13 @@ class ReferenceEditorActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 8),
         PrimaryButton(
-          label: isEditing ? 'Нигоҳ доштан' : 'Сохтан',
+          label: isEditing ? l.commonSave : l.productCreate,
           icon: Icons.save_outlined,
           isLoading: isSaving,
           onPressed: onSave,
@@ -299,7 +303,7 @@ class ReferenceEditorActions extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: isSaving ? null : onDelete,
             icon: const Icon(Icons.delete_outline),
-            label: const Text('Ҳазф'),
+            label: Text(l.commonDelete),
             style: OutlinedButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.error,
             ),
@@ -315,19 +319,20 @@ Future<bool> confirmReferenceDelete(
   BuildContext context,
   String name,
 ) async {
+  final l = AppLocalizations.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Ҳазф'),
-      content: Text('«$name» ҳазф карда шавад?'),
+      title: Text(l.commonDelete),
+      content: Text(l.productDeleteBody(name)),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Бекор'),
+          child: Text(l.commonCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(ctx).pop(true),
-          child: const Text('Ҳазф'),
+          child: Text(l.commonDelete),
         ),
       ],
     ),

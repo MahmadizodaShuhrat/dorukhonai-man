@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_result.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_data_table.dart';
 import '../../../shared/app_scaffold.dart';
 import '../../../shared/app_toast.dart';
@@ -56,8 +57,10 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
     final lines = ref.read(inventoryDraftProvider);
     final branchId = (await ref.read(currentBranchProvider.future))?.id;
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     // Counted quantities may exceed on-hand and may legitimately be zero.
     final failure = validateOperationLines(
+      l,
       lines,
       branchId,
       enforceMaxOnHand: false,
@@ -85,7 +88,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
         _noteController.clear();
         ref.invalidate(inventoryHistoryProvider);
         if (data.discrepancies.isEmpty) {
-          AppToast.success(context, 'Инвентаризатсия сабт шуд (фарқият нест).');
+          AppToast.success(context, l.inventorySavedNoDiff);
         } else {
           await _showDiscrepancies(data.discrepancies);
         }
@@ -95,20 +98,21 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
   }
 
   Future<void> _showDiscrepancies(List<InventoryDiscrepancy> rows) {
+    final l = AppLocalizations.of(context);
     return showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Фарқиятҳои инвентаризатсия'),
+        title: Text(l.inventoryDiscrepanciesTitle),
         content: SizedBox(
           width: 520,
           height: 360,
           child: AppDataTable(
             minWidth: 480,
-            columns: const [
-              DataColumn2(label: Text('Дору'), size: ColumnSize.L),
-              DataColumn2(label: Text('Интизор'), numeric: true),
-              DataColumn2(label: Text('Ҳисобшуда'), numeric: true),
-              DataColumn2(label: Text('Фарқият'), numeric: true),
+            columns: [
+              DataColumn2(label: Text(l.opColDrug), size: ColumnSize.L),
+              DataColumn2(label: Text(l.inventoryColExpected), numeric: true),
+              DataColumn2(label: Text(l.inventoryColCounted), numeric: true),
+              DataColumn2(label: Text(l.inventoryColDiff), numeric: true),
             ],
             rows: [
               for (final d in rows)
@@ -130,7 +134,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
         actions: [
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Хуб'),
+            child: Text(l.inventoryOk),
           ),
         ],
       ),
@@ -139,17 +143,18 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final lines = ref.watch(inventoryDraftProvider);
     final submitting = ref.watch(operationSubmittingProvider);
     return AppScaffold(
-      title: 'Инвентаризатсия',
+      title: l.inventoryTitle,
       icon: Icons.fact_check_outlined,
-      subtitle: 'Ҳисоб кардани бақия ва танзими фарқият',
+      subtitle: l.inventorySubtitle,
       actions: [
         FilledButton.icon(
           onPressed: submitting || lines.isEmpty ? null : _submit,
           icon: const Icon(Icons.save_outlined),
-          label: const Text('Сабт кардан'),
+          label: Text(l.inventorySubmit),
         ),
       ],
       body: Column(
@@ -161,10 +166,10 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
               Expanded(
                 child: TextField(
                   controller: _noteController,
-                  decoration: const InputDecoration(
-                    labelText: 'Эзоҳ',
+                  decoration: InputDecoration(
+                    labelText: l.inventoryNote,
                     isDense: true,
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
               ),
@@ -172,7 +177,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
               OutlinedButton.icon(
                 onPressed: _addBatch,
                 icon: const Icon(Icons.add),
-                label: const Text('Партия илова'),
+                label: Text(l.inventoryAddBatch),
               ),
             ],
           ),
@@ -180,9 +185,9 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
           Expanded(
             child: OperationLinesTable(
               provider: inventoryDraftProvider,
-              quantityLabel: 'Ҳисобшуда',
+              quantityLabel: l.inventoryCountedLabel,
               showDiscrepancy: true,
-              emptyMessage: 'Партия илова кунед барои ҳисоб.',
+              emptyMessage: l.inventoryEmptyDraft,
             ),
           ),
           const SizedBox(height: 16),
@@ -198,33 +203,34 @@ class _InventoryHistory extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final async = ref.watch(inventoryHistoryProvider);
     return OperationHistoryCard(
-      title: 'Инвентаризатсияҳои охирин',
+      title: l.inventoryHistoryTitle,
       child: async.when(
         loading: () => const LoadingState(),
         error: (err, _) => EmptyState(
           icon: Icons.error_outline,
-          title: 'Хатогӣ',
-          message: err is Failure ? err.message : 'Боркунӣ ноком шуд.',
+          title: l.commonError,
+          message: err is Failure ? err.message : l.commonLoadFailed,
           action: FilledButton.tonalIcon(
             onPressed: () => ref.invalidate(inventoryHistoryProvider),
             icon: const Icon(Icons.refresh),
-            label: const Text('Аз нав'),
+            label: Text(l.commonRetry),
           ),
         ),
         data: (paged) {
           if (paged.items.isEmpty) {
-            return const EmptyState(
-              message: 'Ҳоло инвентаризатсия сабт нашудааст.',
+            return EmptyState(
+              message: l.inventoryHistoryEmpty,
             );
           }
           return AppDataTable(
             minWidth: 480,
-            columns: const [
-              DataColumn2(label: Text('Сана')),
-              DataColumn2(label: Text('Рақам')),
-              DataColumn2(label: Text('Сатрҳо'), numeric: true),
+            columns: [
+              DataColumn2(label: Text(l.opColDate)),
+              DataColumn2(label: Text(l.opColNumber)),
+              DataColumn2(label: Text(l.opColLines), numeric: true),
             ],
             rows: [
               for (final d in paged.items)

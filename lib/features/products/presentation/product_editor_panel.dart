@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_toast.dart';
 import '../../../shared/entity_picker.dart';
 import '../../../shared/primary_button.dart';
@@ -109,11 +110,12 @@ class _ProductEditorPanelState extends ConsumerState<ProductEditorPanel> {
         ? await controller.update(product)
         : await controller.create(product);
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     switch (result) {
       case ProductSaveSuccess():
         AppToast.success(
           context,
-          _isEditing ? 'Дору навсозӣ шуд' : 'Дору сохта шуд',
+          _isEditing ? l.productUpdated : l.productCreated,
         );
         widget.onDone();
       case ProductSaveFailure(:final failure):
@@ -124,19 +126,20 @@ class _ProductEditorPanelState extends ConsumerState<ProductEditorPanel> {
   Future<void> _confirmDelete() async {
     final product = widget.product;
     if (product == null) return;
+    final l = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Ҳазфи дору'),
-        content: Text('«${product.name}» ҳазф карда шавад?'),
+        title: Text(l.productDeleteTitle),
+        content: Text(l.productDeleteBody(product.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Бекор'),
+            child: Text(l.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Ҳазф'),
+            child: Text(l.commonDelete),
           ),
         ],
       ),
@@ -145,9 +148,10 @@ class _ProductEditorPanelState extends ConsumerState<ProductEditorPanel> {
     final result =
         await ref.read(productFormControllerProvider.notifier).delete(product.id);
     if (!mounted) return;
+    final l2 = AppLocalizations.of(context);
     switch (result) {
       case ProductSaveSuccess():
-        AppToast.success(context, 'Дору ҳазф шуд');
+        AppToast.success(context, l2.productDeleted);
         widget.onDone();
       case ProductSaveFailure(:final failure):
         AppToast.error(context, failure.message);
@@ -156,10 +160,11 @@ class _ProductEditorPanelState extends ConsumerState<ProductEditorPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final isSaving = ref.watch(productFormControllerProvider);
 
     return SidePanel(
-      title: _isEditing ? 'Таҳрири дору' : 'Дору нав',
+      title: _isEditing ? l.productEditTitle : l.productNewTitle,
       subtitle: _isEditing ? widget.product!.name : null,
       onClose: widget.onDone,
       child: AbsorbPointer(
@@ -173,26 +178,25 @@ class _ProductEditorPanelState extends ConsumerState<ProductEditorPanel> {
                 controller: _name,
                 autofocus: true,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Ном *',
-                  prefixIcon: Icon(Icons.medication_outlined),
+                decoration: InputDecoration(
+                  labelText: l.productName,
+                  prefixIcon: const Icon(Icons.medication_outlined),
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Номи доруро ворид кунед'
-                    : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? l.productValName : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _barcode,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Штрих-код',
-                  prefixIcon: Icon(Icons.qr_code),
+                decoration: InputDecoration(
+                  labelText: l.productBarcode,
+                  prefixIcon: const Icon(Icons.qr_code),
                 ),
               ),
               const SizedBox(height: 16),
               EntityPicker(
-                label: 'Гурӯҳи дору',
+                label: l.productGroup,
                 icon: Icons.category_outlined,
                 optionsProvider: (s) => drugGroupOptionsProvider(s),
                 selectedId: _drugGroupId,
@@ -200,7 +204,7 @@ class _ProductEditorPanelState extends ConsumerState<ProductEditorPanel> {
               ),
               const SizedBox(height: 16),
               EntityPicker(
-                label: 'Истеҳсолкунанда',
+                label: l.productManufacturer,
                 icon: Icons.factory_outlined,
                 optionsProvider: (s) => manufacturerOptionsProvider(s),
                 selectedId: _manufacturerId,
@@ -208,7 +212,7 @@ class _ProductEditorPanelState extends ConsumerState<ProductEditorPanel> {
               ),
               const SizedBox(height: 16),
               EntityPicker(
-                label: 'Воҳиди ченак',
+                label: l.productUnit,
                 icon: Icons.straighten_outlined,
                 optionsProvider: (s) => unitOptionsProvider(s),
                 selectedId: _unitId,
@@ -224,30 +228,30 @@ class _ProductEditorPanelState extends ConsumerState<ProductEditorPanel> {
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                 ],
-                decoration: const InputDecoration(
-                  labelText: 'Минималии бақия',
-                  helperText: 'Зери ин — «камшуда»',
-                  prefixIcon: Icon(Icons.inventory_2_outlined),
+                decoration: InputDecoration(
+                  labelText: l.productMinStock,
+                  helperText: l.productMinStockHelper,
+                  prefixIcon: const Icon(Icons.inventory_2_outlined),
                 ),
                 onFieldSubmitted: (_) => _save(),
               ),
               const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Доруи ретсептӣ'),
-                subtitle: const Text('Фурӯш бо ретсепт'),
+                title: Text(l.productRx),
+                subtitle: Text(l.productRxSubtitle),
                 value: _rxRequired,
                 onChanged: (v) => setState(() => _rxRequired = v),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Фаъол'),
+                title: Text(l.productActiveLabel),
                 value: _isActive,
                 onChanged: (v) => setState(() => _isActive = v),
               ),
               const SizedBox(height: 16),
               PrimaryButton(
-                label: _isEditing ? 'Нигоҳ доштан' : 'Сохтан',
+                label: _isEditing ? l.commonSave : l.productCreate,
                 icon: Icons.save_outlined,
                 isLoading: isSaving,
                 onPressed: _save,
@@ -257,7 +261,7 @@ class _ProductEditorPanelState extends ConsumerState<ProductEditorPanel> {
                 OutlinedButton.icon(
                   onPressed: isSaving ? null : _confirmDelete,
                   icon: const Icon(Icons.delete_outline),
-                  label: const Text('Ғайрифаъол кардан / Ҳазф'),
+                  label: Text(l.productDeactivateDelete),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.error,
                   ),

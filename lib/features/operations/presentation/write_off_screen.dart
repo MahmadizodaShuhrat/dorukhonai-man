@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_result.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_data_table.dart';
 import '../../../shared/app_scaffold.dart';
 import '../../../shared/app_toast.dart';
@@ -56,7 +57,8 @@ class _WriteOffScreenState extends ConsumerState<WriteOffScreen> {
     final lines = ref.read(writeOffDraftProvider);
     final branchId = (await ref.read(currentBranchProvider.future))?.id;
     if (!mounted) return;
-    final failure = validateOperationLines(lines, branchId);
+    final l = AppLocalizations.of(context);
+    final failure = validateOperationLines(l, lines, branchId);
     if (failure != null) {
       AppToast.error(context, failure);
       return;
@@ -79,7 +81,7 @@ class _WriteOffScreenState extends ConsumerState<WriteOffScreen> {
         ref.read(writeOffDraftProvider.notifier).clear();
         _noteController.clear();
         ref.invalidate(writeOffHistoryProvider);
-        AppToast.success(context, 'Списание сабт шуд.');
+        AppToast.success(context, l.writeOffSaved);
       case Error(:final failure):
         AppToast.error(context, failure.message);
     }
@@ -87,17 +89,18 @@ class _WriteOffScreenState extends ConsumerState<WriteOffScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final lines = ref.watch(writeOffDraftProvider);
     final submitting = ref.watch(operationSubmittingProvider);
     return AppScaffold(
-      title: 'Списание',
+      title: l.writeOffTitle,
       icon: Icons.delete_sweep_outlined,
-      subtitle: 'Аз бақия баровардан (мӯҳлат гузашта, вайроншуда…)',
+      subtitle: l.writeOffSubtitle,
       actions: [
         FilledButton.icon(
           onPressed: submitting || lines.isEmpty ? null : _submit,
           icon: const Icon(Icons.save_outlined),
-          label: const Text('Сабт кардан'),
+          label: Text(l.writeOffSubmit),
         ),
       ],
       body: Column(
@@ -111,14 +114,14 @@ class _WriteOffScreenState extends ConsumerState<WriteOffScreen> {
                 child: DropdownButtonFormField<WriteOffReason>(
                   initialValue: _reason,
                   isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Сабаб *',
+                  decoration: InputDecoration(
+                    labelText: l.writeOffReason,
                     isDense: true,
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                   items: [
                     for (final r in WriteOffReason.values)
-                      DropdownMenuItem(value: r, child: Text(r.label)),
+                      DropdownMenuItem(value: r, child: Text(r.label(l))),
                   ],
                   onChanged: (v) =>
                       setState(() => _reason = v ?? WriteOffReason.other),
@@ -128,10 +131,10 @@ class _WriteOffScreenState extends ConsumerState<WriteOffScreen> {
               Expanded(
                 child: TextField(
                   controller: _noteController,
-                  decoration: const InputDecoration(
-                    labelText: 'Эзоҳ',
+                  decoration: InputDecoration(
+                    labelText: l.writeOffNote,
                     isDense: true,
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
               ),
@@ -139,7 +142,7 @@ class _WriteOffScreenState extends ConsumerState<WriteOffScreen> {
               OutlinedButton.icon(
                 onPressed: _addBatch,
                 icon: const Icon(Icons.add),
-                label: const Text('Партия илова'),
+                label: Text(l.writeOffAddBatch),
               ),
             ],
           ),
@@ -147,8 +150,8 @@ class _WriteOffScreenState extends ConsumerState<WriteOffScreen> {
           Expanded(
             child: OperationLinesTable(
               provider: writeOffDraftProvider,
-              quantityLabel: 'Миқдор',
-              emptyMessage: 'Партия илова кунед барои списание.',
+              quantityLabel: l.opColQty,
+              emptyMessage: l.writeOffEmptyDraft,
             ),
           ),
           const SizedBox(height: 16),
@@ -165,32 +168,33 @@ class _WriteOffHistory extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final async = ref.watch(writeOffHistoryProvider);
     return OperationHistoryCard(
-      title: 'Списанияҳои охирин',
+      title: l.writeOffHistoryTitle,
       child: async.when(
         loading: () => const LoadingState(),
         error: (err, _) => EmptyState(
           icon: Icons.error_outline,
-          title: 'Хатогӣ',
-          message: err is Failure ? err.message : 'Боркунӣ ноком шуд.',
+          title: l.commonError,
+          message: err is Failure ? err.message : l.commonLoadFailed,
           action: FilledButton.tonalIcon(
             onPressed: () => ref.invalidate(writeOffHistoryProvider),
             icon: const Icon(Icons.refresh),
-            label: const Text('Аз нав'),
+            label: Text(l.commonRetry),
           ),
         ),
         data: (paged) {
           if (paged.items.isEmpty) {
-            return const EmptyState(message: 'Ҳоло списание сабт нашудааст.');
+            return EmptyState(message: l.writeOffHistoryEmpty);
           }
           return AppDataTable(
             minWidth: 520,
-            columns: const [
-              DataColumn2(label: Text('Сана')),
-              DataColumn2(label: Text('Рақам')),
-              DataColumn2(label: Text('Сабаб')),
-              DataColumn2(label: Text('Сатрҳо'), numeric: true),
+            columns: [
+              DataColumn2(label: Text(l.opColDate)),
+              DataColumn2(label: Text(l.opColNumber)),
+              DataColumn2(label: Text(l.opColReason)),
+              DataColumn2(label: Text(l.opColLines), numeric: true),
             ],
             rows: [
               for (final w in paged.items)
@@ -198,7 +202,7 @@ class _WriteOffHistory extends ConsumerWidget {
                   cells: [
                     DataCell(Text(Formatters.dateTime(w.createdAt))),
                     DataCell(Text(w.number ?? '—')),
-                    DataCell(Text(w.reason.label)),
+                    DataCell(Text(w.reason.label(l))),
                     DataCell(Text('${w.lineCount}')),
                   ],
                 ),

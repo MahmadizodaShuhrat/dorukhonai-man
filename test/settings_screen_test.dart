@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'reports_settings_support.dart';
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
 
 late AppPreferences _prefs;
 
@@ -31,7 +32,7 @@ List<Override> _overrides({
 Widget _host({required FakeAuthRepository auth, FakeUsersRepository? users}) {
   return ProviderScope(
     overrides: _overrides(auth: auth, users: users),
-    child: const MaterialApp(home: Scaffold(body: SettingsScreen())),
+    child: localizedApp(const Scaffold(body: SettingsScreen())),
   );
 }
 
@@ -49,10 +50,16 @@ void main() {
   }
 
   testWidgets('renders the core settings sections', (tester) async {
-    desktopWindow(tester);
+    // Tall viewport so the lazy ListView builds every section at once
+    // (Appearance/Server/Alert/Markup/Printer/User) without scrolling.
+    tester.view.physicalSize = const Size(1440, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(_host(auth: FakeAuthRepository()));
     await tester.pumpAndSettle();
 
+    expect(find.text('НАМУДИ НАМОИШ'), findsOneWidget);
     expect(find.text('СЕРВЕР'), findsOneWidget);
     expect(find.text('ОГОҲӢ'), findsOneWidget);
     expect(find.text('НАРХ'), findsOneWidget);
@@ -111,7 +118,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: Scaffold(body: SettingsScreen())),
+        child: localizedApp(const Scaffold(body: SettingsScreen())),
       ),
     );
     await tester.pumpAndSettle();
@@ -158,7 +165,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: Scaffold(body: SettingsScreen())),
+        child: localizedApp(const Scaffold(body: SettingsScreen())),
       ),
     );
     await tester.pumpAndSettle();
@@ -209,7 +216,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: Scaffold(body: SettingsScreen())),
+        child: localizedApp(const Scaffold(body: SettingsScreen())),
       ),
     );
     await tester.pumpAndSettle();
@@ -271,7 +278,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp.router(routerConfig: router),
+        child: localizedRouterApp(router),
       ),
     );
     await tester.pumpAndSettle();

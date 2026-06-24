@@ -4,20 +4,26 @@
 /// `toJson`. See TZ_01 §4.7 and TZ_03 §C.6.
 library;
 
+import '../../../l10n/app_localizations.dart';
+
 /// How a sales report is grouped (the `groupBy` query parameter of
 /// `GET /reports/sales`).
 enum SalesGroupBy {
-  day('day', 'Аз рӯи рӯз'),
-  product('product', 'Аз рӯи дору'),
-  seller('seller', 'Аз рӯи фурӯшанда');
+  day('day'),
+  product('product'),
+  seller('seller');
 
-  const SalesGroupBy(this.wire, this.label);
+  const SalesGroupBy(this.wire);
 
   /// The exact token used on the wire (`?groupBy=`).
   final String wire;
 
-  /// Tajik UI label for the segmented selector.
-  final String label;
+  /// Localized UI label for the segmented selector.
+  String label(AppLocalizations l) => switch (this) {
+    SalesGroupBy.day => l.reportGroupByDay,
+    SalesGroupBy.product => l.reportGroupByProduct,
+    SalesGroupBy.seller => l.reportGroupBySeller,
+  };
 }
 
 /// A single grouped sales row from `GET /reports/sales?groupBy=`.

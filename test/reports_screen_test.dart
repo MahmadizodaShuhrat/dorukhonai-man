@@ -6,11 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'reports_settings_support.dart';
+import 'support/l10n_harness.dart';
 
 Widget _host(FakeReportsRepository repo) {
   return ProviderScope(
     overrides: [reportsRepositoryProvider.overrideWithValue(repo)],
-    child: const MaterialApp(home: Scaffold(body: ReportsScreen())),
+    child: localizedApp(const Scaffold(body: ReportsScreen())),
   );
 }
 

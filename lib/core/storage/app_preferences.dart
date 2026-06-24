@@ -11,6 +11,8 @@ class AppPreferences {
   final SharedPreferences _prefs;
 
   static const String _kServerBaseUrl = 'server_base_url';
+  static const String _kThemeMode = 'theme_mode';
+  static const String _kLanguageCode = 'language_code';
 
   /// Persisted server base URL (full `scheme://host:port/api/v1`), or `null`
   /// when the user has not overridden the default.
@@ -20,6 +22,20 @@ class AppPreferences {
       _prefs.setString(_kServerBaseUrl, value);
 
   Future<void> clearServerBaseUrl() => _prefs.remove(_kServerBaseUrl);
+
+  /// Persisted theme mode name: `'system'` | `'light'` | `'dark'`. `null` when
+  /// the user has not chosen one yet (defaults to system).
+  String? get themeModeName => _prefs.getString(_kThemeMode);
+
+  Future<void> setThemeModeName(String value) =>
+      _prefs.setString(_kThemeMode, value);
+
+  /// Persisted UI language code: `'tg'` (Tajik, default) | `'ru'` (Russian).
+  /// `null` when the user has not chosen one yet (defaults to Tajik).
+  String? get languageCode => _prefs.getString(_kLanguageCode);
+
+  Future<void> setLanguageCode(String value) =>
+      _prefs.setString(_kLanguageCode, value);
 }
 
 /// Async provider for the [SharedPreferences] singleton. Overridden in tests

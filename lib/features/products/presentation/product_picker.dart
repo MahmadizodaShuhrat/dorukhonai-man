@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_result.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/product_models.dart';
 import '../data/products_repository.dart';
+import 'quick_create_product_dialog.dart';
 
 /// A reusable modal product lookup (search by name OR scan a 1D barcode into
 /// the focused field) backed by [ProductsRepository]. Returns the chosen
@@ -71,12 +73,13 @@ class _ProductPickerDialogState extends ConsumerState<ProductPickerDialog> {
     });
     final result = await repo.list(search: term, page: 1, size: 25);
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     switch (result) {
       case Success(:final data):
         setState(() {
           _results = data.items;
           _isLoading = false;
-          _message = data.items.isEmpty ? 'Дору ёфт нашуд' : null;
+          _message = data.items.isEmpty ? l.productsEmpty : null;
         });
       case Error(:final failure):
         setState(() {
@@ -109,8 +112,27 @@ class _ProductPickerDialogState extends ConsumerState<ProductPickerDialog> {
     }
   }
 
+  /// Open the quick-create dialog (barcode/name pre-filled from the current
+  /// query) so an unknown scanned drug can be added to the catalog on the spot.
+  /// On success the picker closes returning the new product.
+  Future<void> _createNew() async {
+    final q = _queryController.text.trim();
+    final isBarcode = q.isNotEmpty && RegExp(r'^\d{6,}$').hasMatch(q);
+    final created = await QuickCreateProductDialog.show(
+      context,
+      barcode: isBarcode ? q : null,
+      initialName: isBarcode || q.isEmpty ? null : q,
+    );
+    if (created != null && mounted) {
+      Navigator.of(context).pop(created);
+    } else if (mounted) {
+      _focusNode.requestFocus();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Dialog(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560, maxHeight: 560),
@@ -121,14 +143,22 @@ class _ProductPickerDialogState extends ConsumerState<ProductPickerDialog> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Интихоби дору',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      l.productPickerTitle,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
+                  TextButton.icon(
+                    onPressed: _createNew,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text(l.productsNew),
+                  ),
                   IconButton(
-                    tooltip: 'Пӯшидан',
+                    tooltip: l.commonClose,
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
@@ -142,10 +172,10 @@ class _ProductPickerDialogState extends ConsumerState<ProductPickerDialog> {
                 textInputAction: TextInputAction.search,
                 onChanged: _onChanged,
                 onSubmitted: _onSubmitted,
-                decoration: const InputDecoration(
-                  hintText: 'Ҷустуҷӯ ё скани штрих-код…',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  hintText: l.productPickerSearchHint,
+                  prefixIcon: const Icon(Icons.search),
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
               ),
@@ -160,8 +190,24 @@ class _ProductPickerDialogState extends ConsumerState<ProductPickerDialog> {
   }
 
   Widget _buildList(BuildContext context) {
+    final l = AppLocalizations.of(context);
     if (_message != null && _results.isEmpty) {
-      return Center(child: Text(_message!));
+      // Nothing matched — offer to create the (likely just-scanned) drug now,
+      // so receiving never gets stuck on an unknown barcode.
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_message!, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: _createNew,
+              icon: const Icon(Icons.add),
+              label: Text(l.productPickerCreateNew),
+            ),
+          ],
+        ),
+      );
     }
     return ListView.separated(
       itemCount: _results.length,

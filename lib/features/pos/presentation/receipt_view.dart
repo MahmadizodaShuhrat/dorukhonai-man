@@ -5,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/pos_models.dart';
 
 /// On-screen sale receipt + cross-platform PDF "Print" action (TZ §3.2).
@@ -18,9 +19,6 @@ class ReceiptDialog extends StatelessWidget {
 
   final Sale sale;
 
-  /// Shop name shown on the receipt header.
-  static const String shopName = 'Дорухонаи Ман';
-
   /// Shows the receipt and resolves when it is dismissed.
   static Future<void> show(BuildContext context, Sale sale) {
     return showDialog<void>(
@@ -32,12 +30,13 @@ class ReceiptDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     return AlertDialog(
       title: Row(
         children: [
-          const Expanded(child: Text('Чек')),
+          Expanded(child: Text(l.receiptCheck)),
           IconButton(
-            tooltip: 'Пӯшидан',
+            tooltip: l.commonClose,
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.of(context).pop(),
           ),
@@ -52,47 +51,47 @@ class ReceiptDialog extends StatelessWidget {
             children: [
               Center(
                 child: Text(
-                  shopName,
+                  l.receiptShopName,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               const SizedBox(height: 4),
-              Center(child: Text('Чек № ${sale.number}')),
+              Center(child: Text(l.receiptCheckNumber(sale.number))),
               Center(child: Text(Formatters.dateTime(sale.createdAt))),
               const Divider(),
               for (final line in sale.lines) _ReceiptLineRow(line: line),
               const Divider(),
               _AmountRow(
-                label: 'Зерҷамъ',
+                label: l.receiptViewSubtotal,
                 value: Formatters.money(sale.subtotal),
               ),
               if (sale.discount > 0)
                 _AmountRow(
-                  label: 'Тахфиф',
+                  label: l.receiptViewDiscount,
                   value: '-${Formatters.money(sale.discount)}',
                 ),
               _AmountRow(
-                label: 'ҲАМАГӢ',
+                label: l.receiptViewTotal,
                 value: Formatters.money(sale.total),
                 emphasize: true,
               ),
               const Divider(),
               for (final payment in sale.payments)
                 _AmountRow(
-                  label: _paymentLabel(payment.method),
+                  label: _paymentLabel(l, payment.method),
                   value: Formatters.money(payment.amount),
                 ),
               if (sale.changeDue > 0)
                 _AmountRow(
-                  label: 'Қайтарма',
+                  label: l.receiptViewChange,
                   value: Formatters.money(sale.changeDue),
                 ),
               const SizedBox(height: 12),
               Center(
                 child: Text(
-                  'Ташаккур барои харид!',
+                  l.receiptThanks,
                   style: theme.textTheme.bodySmall,
                 ),
               ),
@@ -103,12 +102,12 @@ class ReceiptDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Пӯшидан'),
+          child: Text(l.commonClose),
         ),
         FilledButton.icon(
-          onPressed: () => printReceipt(sale),
+          onPressed: () => printReceipt(l, sale),
           icon: const Icon(Icons.print),
-          label: const Text('Чоп'),
+          label: Text(l.receiptPrint),
         ),
       ],
     );
@@ -117,15 +116,20 @@ class ReceiptDialog extends StatelessWidget {
 
 /// Builds a printable PDF receipt and hands it to the platform print dialog.
 /// Cross-platform (Windows/macOS/iOS/Android) via the `printing` package.
-Future<void> printReceipt(Sale sale) async {
+/// [l] supplies the localized labels (resolved from the dialog's context).
+Future<void> printReceipt(AppLocalizations l, Sale sale) async {
   await Printing.layoutPdf(
-    onLayout: (format) async => _buildReceiptPdf(sale, format),
-    name: 'Чек ${sale.number}',
+    onLayout: (format) async => _buildReceiptPdf(l, sale, format),
+    name: l.receiptCheckNumber(sale.number),
   );
 }
 
 /// Produces the receipt PDF bytes on an ~80mm roll page (`PdfPageFormat`).
-Future<Uint8List> _buildReceiptPdf(Sale sale, PdfPageFormat format) async {
+Future<Uint8List> _buildReceiptPdf(
+  AppLocalizations l,
+  Sale sale,
+  PdfPageFormat format,
+) async {
   final doc = pw.Document();
   // 80mm roll receipt with a generous max height.
   final pageFormat = PdfPageFormat(
@@ -143,7 +147,7 @@ Future<Uint8List> _buildReceiptPdf(Sale sale, PdfPageFormat format) async {
           children: [
             pw.Center(
               child: pw.Text(
-                ReceiptDialog.shopName,
+                l.receiptShopName,
                 style: pw.TextStyle(
                   fontSize: 13,
                   fontWeight: pw.FontWeight.bold,
@@ -151,25 +155,32 @@ Future<Uint8List> _buildReceiptPdf(Sale sale, PdfPageFormat format) async {
               ),
             ),
             pw.SizedBox(height: 2),
-            pw.Center(child: pw.Text('Чек № ${sale.number}')),
+            pw.Center(child: pw.Text(l.receiptCheckNumber(sale.number))),
             pw.Center(child: pw.Text(Formatters.dateTime(sale.createdAt))),
             pw.Divider(),
-            for (final line in sale.lines) _pdfLine(line),
+            for (final line in sale.lines) _pdfLine(l, line),
             pw.Divider(),
-            _pdfAmount('Зерҷамъ', Formatters.money(sale.subtotal)),
+            _pdfAmount(l.receiptViewSubtotal, Formatters.money(sale.subtotal)),
             if (sale.discount > 0)
-              _pdfAmount('Тахфиф', '-${Formatters.money(sale.discount)}'),
-            _pdfAmount('ҲАМАГӢ', Formatters.money(sale.total), bold: true),
+              _pdfAmount(
+                l.receiptViewDiscount,
+                '-${Formatters.money(sale.discount)}',
+              ),
+            _pdfAmount(
+              l.receiptViewTotal,
+              Formatters.money(sale.total),
+              bold: true,
+            ),
             pw.Divider(),
             for (final payment in sale.payments)
               _pdfAmount(
-                _paymentLabel(payment.method),
+                _paymentLabel(l, payment.method),
                 Formatters.money(payment.amount),
               ),
             if (sale.changeDue > 0)
-              _pdfAmount('Қайтарма', Formatters.money(sale.changeDue)),
+              _pdfAmount(l.receiptViewChange, Formatters.money(sale.changeDue)),
             pw.SizedBox(height: 8),
-            pw.Center(child: pw.Text('Ташаккур барои харид!')),
+            pw.Center(child: pw.Text(l.receiptThanks)),
           ],
         );
       },
@@ -179,7 +190,7 @@ Future<Uint8List> _buildReceiptPdf(Sale sale, PdfPageFormat format) async {
   return doc.save();
 }
 
-pw.Widget _pdfLine(SaleLine line) {
+pw.Widget _pdfLine(AppLocalizations l, SaleLine line) {
   final name = line.productName ?? line.productId;
   final series = line.seriesNumber;
   return pw.Column(
@@ -188,7 +199,7 @@ pw.Widget _pdfLine(SaleLine line) {
       pw.Text(name, style: const pw.TextStyle(fontSize: 10)),
       if (series != null && series.isNotEmpty)
         pw.Text(
-          'Серия: $series',
+          l.receiptSeries(series),
           style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
         ),
       pw.Row(
@@ -223,11 +234,12 @@ pw.Widget _pdfAmount(String label, String value, {bool bold = false}) {
   );
 }
 
-String _paymentLabel(PaymentMethod method) => switch (method) {
-  PaymentMethod.cash => 'Нақд',
-  PaymentMethod.card => 'Корт',
-  PaymentMethod.credit => 'Қарз',
-};
+String _paymentLabel(AppLocalizations l, PaymentMethod method) =>
+    switch (method) {
+      PaymentMethod.cash => l.paymentMethodCash,
+      PaymentMethod.card => l.paymentMethodCard,
+      PaymentMethod.credit => l.paymentMethodCredit,
+    };
 
 /// Renders a quantity without a trailing `.0` for whole numbers.
 String _trimNum(double value) =>
@@ -242,6 +254,7 @@ class _ReceiptLineRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     final series = line.seriesNumber;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -251,7 +264,7 @@ class _ReceiptLineRow extends StatelessWidget {
           Text(line.productName ?? line.productId),
           if (series != null && series.isNotEmpty)
             Text(
-              'Серия: $series',
+              l.receiptSeries(series),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.outline,
               ),

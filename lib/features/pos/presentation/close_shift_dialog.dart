@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_result.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/pos_models.dart';
 import '../data/pos_repository.dart';
 import 'pos_providers.dart';
@@ -69,6 +70,7 @@ class _CloseShiftDialogState extends ConsumerState<CloseShiftDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final busy = ref.watch(cashShiftControllerProvider).isLoading;
     final report = _report;
 
@@ -77,7 +79,7 @@ class _CloseShiftDialogState extends ConsumerState<CloseShiftDialog> {
     }
 
     return AlertDialog(
-      title: const Text('Бастани смена'),
+      title: Text(l.closeShiftTitle),
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
         child: Form(
@@ -86,9 +88,12 @@ class _CloseShiftDialogState extends ConsumerState<CloseShiftDialog> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Кушода шуд: ${Formatters.dateTime(widget.shift.openedAt)}'),
-              Text('Нақди ибтидоӣ: ${Formatters.money(widget.shift.openingCash)}'),
-              Text('Фурӯш: ${Formatters.money(widget.shift.totalSales)}'),
+              Text(l.closeShiftOpenedAt(
+                  Formatters.dateTime(widget.shift.openedAt))),
+              Text(l.closeShiftOpeningCash(
+                  Formatters.money(widget.shift.openingCash))),
+              Text(l.closeShiftSales(
+                  Formatters.money(widget.shift.totalSales))),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _closingCash,
@@ -96,15 +101,15 @@ class _CloseShiftDialogState extends ConsumerState<CloseShiftDialog> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Нақди ниҳоӣ (ҳисобшуда) *',
-                  prefixIcon: Icon(Icons.payments_outlined),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l.closeShiftClosingCash,
+                  prefixIcon: const Icon(Icons.payments_outlined),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (v) {
                   final parsed = _parse(v ?? '');
-                  if (parsed == null) return 'Рақами дуруст ворид кунед';
-                  if (parsed < 0) return 'Манфӣ шуда наметавонад';
+                  if (parsed == null) return l.validationEnterNumber;
+                  if (parsed < 0) return l.validationNotNegative;
                   return null;
                 },
                 onFieldSubmitted: (_) => busy ? null : _close(),
@@ -123,12 +128,12 @@ class _CloseShiftDialogState extends ConsumerState<CloseShiftDialog> {
       actions: [
         TextButton(
           onPressed: busy ? null : () => Navigator.of(context).pop(),
-          child: const Text('Бекор'),
+          child: Text(l.commonCancel),
         ),
         FilledButton.icon(
           onPressed: busy ? null : _close,
           icon: const Icon(Icons.lock_outline),
-          label: const Text('Бастан'),
+          label: Text(l.closeShiftClose),
         ),
       ],
     );
@@ -143,8 +148,9 @@ class _ZReportView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return AlertDialog(
-      title: const Text('Z-ҳисобот'),
+      title: Text(l.zReportTitle),
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
         child: SingleChildScrollView(
@@ -152,28 +158,31 @@ class _ZReportView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _row('Кушода шуд', Formatters.dateTime(report.openedAt)),
+              _row(l.zReportOpened, Formatters.dateTime(report.openedAt)),
               if (report.closedAt != null)
-                _row('Баста шуд', Formatters.dateTime(report.closedAt!)),
+                _row(l.zReportClosed, Formatters.dateTime(report.closedAt!)),
               const Divider(),
-              _row('Нақди ибтидоӣ', Formatters.money(report.openingCash)),
-              _row('Шумораи фурӯш', '${report.salesCount}'),
-              _row('Фурӯш (ҷамъ)', Formatters.money(report.totalSales)),
-              _row('Бозгашт (ҷамъ)', Formatters.money(report.totalReturns)),
-              _row('Софи фурӯш', Formatters.money(report.netTotal),
+              _row(l.zReportOpeningCash, Formatters.money(report.openingCash)),
+              _row(l.zReportSalesCount, '${report.salesCount}'),
+              _row(l.zReportSalesTotal, Formatters.money(report.totalSales)),
+              _row(l.zReportReturnsTotal, Formatters.money(report.totalReturns)),
+              _row(l.zReportNet, Formatters.money(report.netTotal),
                   emphasize: true),
               const Divider(),
-              _row('Нақд', Formatters.money(report.amountFor(PaymentMethod.cash))),
-              _row('Корт', Formatters.money(report.amountFor(PaymentMethod.card))),
-              _row('Қарз',
+              _row(l.paymentMethodCash,
+                  Formatters.money(report.amountFor(PaymentMethod.cash))),
+              _row(l.paymentMethodCard,
+                  Formatters.money(report.amountFor(PaymentMethod.card))),
+              _row(l.paymentMethodCredit,
                   Formatters.money(report.amountFor(PaymentMethod.credit))),
               const Divider(),
-              _row('Нақди интизорӣ', Formatters.money(report.expectedCash)),
+              _row(l.zReportExpectedCash, Formatters.money(report.expectedCash)),
               if (report.closingCash != null)
-                _row('Нақди ҳисобшуда', Formatters.money(report.closingCash!)),
+                _row(l.zReportCountedCash,
+                    Formatters.money(report.closingCash!)),
               if (report.closingCash != null)
                 _row(
-                  'Фарқият',
+                  l.zReportDiff,
                   Formatters.money(report.closingCash! - report.expectedCash),
                   emphasize: true,
                 ),
@@ -184,7 +193,7 @@ class _ZReportView extends StatelessWidget {
       actions: [
         FilledButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Пӯшидан'),
+          child: Text(l.commonClose),
         ),
       ],
     );

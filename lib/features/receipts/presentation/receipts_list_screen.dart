@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_data_table.dart';
 import '../../../shared/app_scaffold.dart';
 import '../../../shared/entity_picker.dart';
@@ -31,6 +32,7 @@ class ReceiptsListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final state = ref.watch(receiptsListControllerProvider);
     final controller = ref.read(receiptsListControllerProvider.notifier);
 
@@ -45,19 +47,19 @@ class ReceiptsListScreen extends ConsumerWidget {
 
     return AppScaffold(
       icon: Icons.inventory_2_outlined,
-      title: 'Приход',
-      subtitle: 'Ҳамагӣ: ${state.total}',
+      title: l.receiptsTitle,
+      subtitle: l.commonTotalCount(state.total),
       padBody: false,
       actions: [
         IconButton(
-          tooltip: 'Навсозӣ',
+          tooltip: l.receiptsRefresh,
           icon: const Icon(Icons.refresh),
           onPressed: state.isLoading ? null : controller.refresh,
         ),
         FilledButton.icon(
           onPressed: () => _openEditor(context),
           icon: const Icon(Icons.add),
-          label: const Text('Приход нав'),
+          label: Text(l.receiptsNew),
         ),
       ],
       body: Column(
@@ -66,7 +68,7 @@ class ReceiptsListScreen extends ConsumerWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-              child: _buildTable(context, state, controller, supplierNames),
+              child: _buildTable(context, l, state, controller, supplierNames),
             ),
           ),
           _PaginationBar(state: state, controller: controller),
@@ -77,6 +79,7 @@ class ReceiptsListScreen extends ConsumerWidget {
 
   Widget _buildTable(
     BuildContext context,
+    AppLocalizations l,
     ReceiptsListState state,
     ReceiptsListController controller,
     Map<String, String> supplierNames,
@@ -88,14 +91,18 @@ class ReceiptsListScreen extends ConsumerWidget {
           isLoading: state.isLoading,
           errorMessage: state.receipts.isEmpty ? state.failure?.message : null,
           onRetry: controller.refresh,
-          emptyMessage: 'Приход ёфт нашуд',
+          emptyMessage: l.receiptsEmpty,
           emptyIcon: Icons.inventory_2_outlined,
-          columns: const [
-            DataColumn2(label: Text('№'), size: ColumnSize.S),
-            DataColumn2(label: Text('Сана'), fixedWidth: 110),
-            DataColumn2(label: Text('Таъминкунанда'), size: ColumnSize.L),
-            DataColumn2(label: Text('Статус'), fixedWidth: 130),
-            DataColumn2(label: Text('Ҷамъ'), numeric: true, fixedWidth: 120),
+          columns: [
+            DataColumn2(label: Text(l.receiptColNumber), size: ColumnSize.S),
+            DataColumn2(label: Text(l.receiptColDate), fixedWidth: 110),
+            DataColumn2(label: Text(l.receiptColSupplier), size: ColumnSize.L),
+            DataColumn2(label: Text(l.receiptColStatus), fixedWidth: 130),
+            DataColumn2(
+              label: Text(l.receiptColTotal),
+              numeric: true,
+              fixedWidth: 120,
+            ),
           ],
           rows: [
             for (final receipt in state.receipts)
@@ -162,10 +169,11 @@ class _FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final hasRange = state.from != null && state.to != null;
     final rangeLabel = hasRange
         ? '${Formatters.date(state.from!)} – ${Formatters.date(state.to!)}'
-        : 'Сана';
+        : l.receiptDateFilter;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
@@ -175,13 +183,13 @@ class _FilterBar extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           ChoiceChip(
-            label: const Text('Ҳама'),
+            label: Text(l.receiptFilterAll),
             selected: state.status == null,
             onSelected: (_) => controller.filterByStatus(null),
           ),
           for (final status in ReceiptStatus.values)
             ChoiceChip(
-              label: Text(statusLabel(status)),
+              label: Text(statusLabel(l, status)),
               selected: state.status == status,
               onSelected: (_) => controller.filterByStatus(status),
             ),
@@ -193,14 +201,14 @@ class _FilterBar extends StatelessWidget {
           ),
           if (hasRange)
             IconButton(
-              tooltip: 'Санаро тоза кардан',
+              tooltip: l.receiptClearDate,
               icon: const Icon(Icons.clear, size: 18),
               onPressed: () => controller.filterByDateRange(null, null),
             ),
           SizedBox(
             width: 260,
             child: EntityPicker(
-              label: 'Таъминкунанда',
+              label: l.receiptColSupplier,
               icon: Icons.local_shipping_outlined,
               optionsProvider: (s) => supplierOptionsProvider(s),
               selectedId: state.supplierId.isEmpty ? null : state.supplierId,
@@ -224,7 +232,7 @@ class ReceiptStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StatusChip(
-      label: statusLabel(status),
+      label: statusLabel(AppLocalizations.of(context), status),
       tone: statusTone(status),
       dense: dense,
     );
@@ -238,11 +246,11 @@ StatusTone statusTone(ReceiptStatus status) => switch (status) {
   ReceiptStatus.cancelled => StatusTone.danger,
 };
 
-/// Tajik label for a [ReceiptStatus].
-String statusLabel(ReceiptStatus status) => switch (status) {
-  ReceiptStatus.draft => 'Лоиҳа',
-  ReceiptStatus.posted => 'Тасдиқшуда',
-  ReceiptStatus.cancelled => 'Бекоршуда',
+/// Localized label for a [ReceiptStatus].
+String statusLabel(AppLocalizations l, ReceiptStatus status) => switch (status) {
+  ReceiptStatus.draft => l.receiptStatusDraft,
+  ReceiptStatus.posted => l.receiptStatusPosted,
+  ReceiptStatus.cancelled => l.receiptStatusCancelled,
 };
 
 class _PaginationBar extends StatelessWidget {
@@ -254,6 +262,7 @@ class _PaginationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         border: Border(
@@ -264,12 +273,12 @@ class _PaginationBar extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            'Саҳ. ${state.page} аз ${state.pageCount}',
+            l.receiptPageOf(state.page, state.pageCount),
             style: theme.textTheme.bodySmall,
           ),
           const Spacer(),
           IconButton(
-            tooltip: 'Қаблӣ',
+            tooltip: l.commonPrevious,
             icon: const Icon(Icons.chevron_left),
             onPressed: state.hasPrevious && !state.isLoading
                 ? controller.previousPage
@@ -277,7 +286,7 @@ class _PaginationBar extends StatelessWidget {
           ),
           Text('${state.page} / ${state.pageCount}'),
           IconButton(
-            tooltip: 'Баъдӣ',
+            tooltip: l.commonNext,
             icon: const Icon(Icons.chevron_right),
             onPressed: state.hasNext && !state.isLoading
                 ? controller.nextPage

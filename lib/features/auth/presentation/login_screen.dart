@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/primary_button.dart';
 import 'auth_provider.dart';
 
@@ -38,6 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final state = ref.watch(authControllerProvider);
 
     return Scaffold(
@@ -59,7 +61,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Дорухона — Касса',
+                    l.loginTitle,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
@@ -68,12 +70,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _usernameController,
                     textInputAction: TextInputAction.next,
                     autofocus: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Логин',
-                      prefixIcon: Icon(Icons.person_outline),
+                    decoration: InputDecoration(
+                      labelText: l.loginUsername,
+                      prefixIcon: const Icon(Icons.person_outline),
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Логинро ворид кунед'
+                        ? l.loginUsernameRequired
                         : null,
                   ),
                   const SizedBox(height: 16),
@@ -83,7 +85,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _submit(),
                     decoration: InputDecoration(
-                      labelText: 'Парол',
+                      labelText: l.loginPassword,
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -97,7 +99,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     validator: (v) => (v == null || v.isEmpty)
-                        ? 'Паролро ворид кунед'
+                        ? l.loginPasswordRequired
                         : null,
                   ),
                   if (state.errorMessage != null) ...[
@@ -111,7 +113,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
                   const SizedBox(height: 24),
                   PrimaryButton(
-                    label: 'Воридшавӣ',
+                    label: l.loginSubmit,
                     icon: Icons.login,
                     isLoading: state.isLoading,
                     onPressed: _submit,

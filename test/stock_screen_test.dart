@@ -7,11 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
 
 Widget _host(FakeStockRepository repo) {
   return ProviderScope(
     overrides: [stockRepositoryProvider.overrideWithValue(repo)],
-    child: const MaterialApp(home: StockScreen()),
+    child: localizedApp(const StockScreen()),
   );
 }
 

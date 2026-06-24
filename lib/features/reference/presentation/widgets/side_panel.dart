@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../l10n/app_localizations.dart';
+
 /// A 380px master-detail editor panel docked to the right of a list
 /// (TZ_03 §C.5 / §D "Master-detail … SidePanel 380px"). Flat-bordered to match
 /// the desktop card style: a hairline left border, a titled header with a close
@@ -25,6 +27,7 @@ class SidePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return Container(
       width: width,
@@ -63,7 +66,7 @@ class SidePanel extends StatelessWidget {
                 ),
                 if (onClose != null)
                   IconButton(
-                    tooltip: 'Пӯшидан',
+                    tooltip: l.commonClose,
                     icon: const Icon(Icons.close),
                     onPressed: onClose,
                   ),

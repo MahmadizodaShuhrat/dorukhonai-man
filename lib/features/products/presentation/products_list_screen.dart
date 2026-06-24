@@ -4,6 +4,7 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_data_table.dart';
 import '../../../shared/app_scaffold.dart';
 import '../../../shared/primary_button.dart';
@@ -76,6 +77,7 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final state = ref.watch(productsListControllerProvider);
     final controller = ref.read(productsListControllerProvider.notifier);
 
@@ -83,12 +85,12 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
     final unitNames = _lookup(ref.watch(unitOptionsProvider('')));
 
     return AppScaffold(
-      title: 'Доруҳо',
+      title: l.productsTitle,
       icon: Icons.medication_outlined,
-      subtitle: 'Ҳамагӣ: ${state.total}',
+      subtitle: l.commonTotalCount(state.total),
       actions: [
         PrimaryButton(
-          label: 'Дору нав',
+          label: l.productsNew,
           icon: Icons.add,
           expand: false,
           onPressed: _openCreate,
@@ -109,7 +111,7 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
                     onChanged: _onSearchChanged,
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: 'Ҷустуҷӯ (ном ё штрих-код)…',
+                      hintText: l.productsSearchHint,
                       prefixIcon: const Icon(Icons.search),
                       isDense: true,
                       suffixIcon: _searchController.text.isEmpty
@@ -131,27 +133,30 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
                           minWidth: 760,
                           fixedLeftColumns: 1,
                           isLoading: state.isLoading,
-                          emptyMessage: 'Дору ёфт нашуд',
+                          emptyMessage: l.productsEmpty,
                           emptyIcon: Icons.medication_outlined,
                           errorMessage:
                               state.failure != null && state.products.isEmpty
                               ? state.failure!.message
                               : null,
                           onRetry: controller.refresh,
-                          columns: const [
-                            DataColumn2(label: Text('Ном'), size: ColumnSize.L),
-                            DataColumn2(label: Text('Штрих-код')),
-                            DataColumn2(label: Text('Гурӯҳ')),
+                          columns: [
                             DataColumn2(
-                              label: Text('Воҳид'),
+                              label: Text(l.productColName),
+                              size: ColumnSize.L,
+                            ),
+                            DataColumn2(label: Text(l.productColBarcode)),
+                            DataColumn2(label: Text(l.productColGroup)),
+                            DataColumn2(
+                              label: Text(l.productColUnit),
                               size: ColumnSize.S,
                             ),
                             DataColumn2(
-                              label: Text('Ретсептӣ'),
+                              label: Text(l.productColRx),
                               size: ColumnSize.S,
                             ),
                             DataColumn2(
-                              label: Text('Фаъол'),
+                              label: Text(l.productColActive),
                               size: ColumnSize.S,
                             ),
                           ],
@@ -190,13 +195,13 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
                                   ),
                                   DataCell(
                                     product.isActive
-                                        ? const StatusChip(
-                                            label: 'Фаъол',
+                                        ? StatusChip(
+                                            label: l.productActive,
                                             tone: StatusTone.ok,
                                             dense: true,
                                           )
-                                        : const StatusChip(
-                                            label: 'Ғайрифаъол',
+                                        : StatusChip(
+                                            label: l.productInactive,
                                             tone: StatusTone.info,
                                             dense: true,
                                           ),
@@ -241,14 +246,15 @@ class _PaginationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          Text('Ҳамагӣ: ${state.total}'),
+          Text(l.commonTotalCount(state.total)),
           const Spacer(),
           IconButton(
-            tooltip: 'Қаблӣ',
+            tooltip: l.commonPrevious,
             icon: const Icon(Icons.chevron_left),
             onPressed: state.hasPrevious && !state.isLoading
                 ? controller.previousPage
@@ -256,7 +262,7 @@ class _PaginationBar extends StatelessWidget {
           ),
           Text('${state.page} / ${state.pageCount}'),
           IconButton(
-            tooltip: 'Баъдӣ',
+            tooltip: l.commonNext,
             icon: const Icon(Icons.chevron_right),
             onPressed: state.hasNext && !state.isLoading
                 ? controller.nextPage

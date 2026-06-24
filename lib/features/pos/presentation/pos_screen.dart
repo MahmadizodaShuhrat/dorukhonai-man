@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/status_colors.dart';
 import '../../../core/api/api_result.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_data_table.dart';
 import '../../../shared/app_toast.dart';
 import '../../branch/presentation/branch_provider.dart';
@@ -123,23 +124,21 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   Future<bool> _confirmRx(Product product) async {
+    final l = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.warning_amber_rounded),
-        title: const Text('Доруи ретсептӣ'),
-        content: Text(
-          '«${product.name}» доруи ретсептӣ (℞) аст. '
-          'Илова кардан ба сабадро тасдиқ мекунед?',
-        ),
+        title: Text(l.posRxTitle),
+        content: Text(l.posRxBody(product.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Бекор'),
+            child: Text(l.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Тасдиқ'),
+            child: Text(l.commonConfirm),
           ),
         ],
       ),
@@ -195,9 +194,10 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   // ---- Sale submission ----
 
   Future<void> _pay() async {
+    final l = AppLocalizations.of(context);
     final cart = ref.read(posCartControllerProvider);
     if (cart.isEmpty) {
-      AppToast.error(context, 'Сабад холӣ аст');
+      AppToast.error(context, l.posCartEmpty);
       return;
     }
     final result = await PaymentDialog.show(context, cart.total);
@@ -221,7 +221,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         if (mounted) {
           AppToast.info(
             context,
-            'Офлайн: фурӯш дар навбати синхрон сабт шуд (чоп шуд).',
+            l.posOfflineSaleQueued,
           );
         }
         if (mounted) await ReceiptDialog.show(context, sale);
@@ -384,6 +384,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
   Widget _buildCart(CartState cart) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     if (cart.isEmpty) {
       return Center(
         child: Padding(
@@ -398,7 +399,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Сабад холӣ. Штрих-кодро скан кунед ё ҷустуҷӯ кунед.',
+                l.posCartEmptyHint,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -413,13 +414,13 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: AppDataTable(
         minWidth: 560,
-        columns: const [
-          DataColumn2(label: Text('#'), fixedWidth: 40),
-          DataColumn2(label: Text('Дору'), size: ColumnSize.L),
-          DataColumn2(label: Text('Миқдор'), fixedWidth: 200),
-          DataColumn2(label: Text('Нарх'), numeric: true),
-          DataColumn2(label: Text('Ҷамъ'), numeric: true),
-          DataColumn2(label: Text(''), fixedWidth: 56),
+        columns: [
+          const DataColumn2(label: Text('#'), fixedWidth: 40),
+          DataColumn2(label: Text(l.posColDrug), size: ColumnSize.L),
+          DataColumn2(label: Text(l.posColQty), fixedWidth: 200),
+          DataColumn2(label: Text(l.posColPrice), numeric: true),
+          DataColumn2(label: Text(l.posColSum), numeric: true),
+          const DataColumn2(label: Text(''), fixedWidth: 56),
         ],
         rows: [
           for (var i = 0; i < cart.items.length; i++)
@@ -433,7 +434,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     children: [
                       if (cart.items[i].rxRequired) ...[
                         Tooltip(
-                          message: 'Доруи ретсептӣ',
+                          message: l.posRxTooltip,
                           child: Text(
                             '℞',
                             style: theme.textTheme.titleMedium?.copyWith(
@@ -478,7 +479,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 ),
                 DataCell(
                   IconButton(
-                    tooltip: 'Ҳазф',
+                    tooltip: l.posRemove,
                     icon: const Icon(Icons.delete_outline, size: 20),
                     onPressed: () => _removeLine(i),
                   ),
@@ -515,6 +516,7 @@ class _RegisterHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final status = StatusColors.of(context);
+    final l = AppLocalizations.of(context);
     return Container(
       height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -529,21 +531,21 @@ class _RegisterHeader extends StatelessWidget {
           Icon(Icons.circle, size: 10, color: status.ok),
           const SizedBox(width: 8),
           Text(
-            'Смена кушода',
+            l.posShiftOpen,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(width: 16),
           Text(
-            'Кушода шуд: ${Formatters.dateTime(shift.openedAt)}',
+            l.posShiftOpenedAt(Formatters.dateTime(shift.openedAt)),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const Spacer(),
           Text(
-            'Фурӯши смена: ${Formatters.money(shift.totalSales)}',
+            l.posShiftSales(Formatters.money(shift.totalSales)),
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -551,12 +553,12 @@ class _RegisterHeader extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           IconButton(
-            tooltip: 'Бозгашти фурӯш (F7)',
+            tooltip: l.posReturnsTooltip,
             icon: const Icon(Icons.assignment_return_outlined),
             onPressed: onReturns,
           ),
           IconButton(
-            tooltip: 'Бастани смена (F10)',
+            tooltip: l.posCloseShiftTooltip,
             icon: const Icon(Icons.lock_outline),
             onPressed: onCloseShift,
           ),
@@ -583,6 +585,7 @@ class _ScanBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -595,10 +598,10 @@ class _ScanBar extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
               textInputAction: TextInputAction.search,
               onSubmitted: onSubmitted,
-              decoration: const InputDecoration(
-                hintText: 'Штрих-кодро скан кунед ё ном ворид кунед…  (F2)',
-                prefixIcon: Icon(Icons.qr_code_scanner),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                hintText: l.posScanHint,
+                prefixIcon: const Icon(Icons.qr_code_scanner),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
             ),
@@ -607,7 +610,7 @@ class _ScanBar extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onSearch,
             icon: const Icon(Icons.search),
-            label: const Text('Ҷустуҷӯ'),
+            label: Text(l.commonSearch),
           ),
         ],
       ),
@@ -681,11 +684,12 @@ class _QtyStepperState extends State<_QtyStepper> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Кам',
+          tooltip: l.posQtyDecrease,
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints.tightFor(width: 40, height: 40),
@@ -709,7 +713,7 @@ class _QtyStepperState extends State<_QtyStepper> {
           ),
         ),
         IconButton(
-          tooltip: 'Зиёд',
+          tooltip: l.posQtyIncrease,
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints.tightFor(width: 40, height: 40),
@@ -739,6 +743,7 @@ class _CheckoutPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     return Container(
       color: theme.colorScheme.surfaceContainerLow,
       padding: const EdgeInsets.all(20),
@@ -746,7 +751,7 @@ class _CheckoutPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'ҲИСОБ',
+            l.posCheck,
             style: theme.textTheme.labelLarge?.copyWith(
               letterSpacing: 0.6,
               color: theme.colorScheme.onSurfaceVariant,
@@ -754,7 +759,7 @@ class _CheckoutPanel extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _TotalRow(
-            label: 'Зерҷамъ',
+            label: l.posSubtotal,
             value: Formatters.money(cart.subtotal),
           ),
           const SizedBox(height: 12),
@@ -765,10 +770,10 @@ class _CheckoutPanel extends StatelessWidget {
             textInputAction: TextInputAction.done,
             onChanged: (_) => onApplyDiscount(),
             onSubmitted: (_) => onApplyDiscount(),
-            decoration: const InputDecoration(
-              labelText: 'Тахфиф (F4)',
-              prefixIcon: Icon(Icons.percent),
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l.posDiscountField,
+              prefixIcon: const Icon(Icons.percent),
+              border: const OutlineInputBorder(),
               isDense: true,
             ),
           ),
@@ -777,7 +782,7 @@ class _CheckoutPanel extends StatelessWidget {
           const SizedBox(height: 8),
           // BIG total.
           Text(
-            'ҲАМАГӢ',
+            l.posTotalAll,
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -792,7 +797,7 @@ class _CheckoutPanel extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            'Тарзи пардохт',
+            l.posPaymentMethod,
             style: theme.textTheme.titleSmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -801,11 +806,11 @@ class _CheckoutPanel extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: const [
-              _MethodHint(label: 'Нақд', icon: Icons.payments_outlined),
-              _MethodHint(label: 'Корт', icon: Icons.credit_card),
+            children: [
+              _MethodHint(label: l.posMethodCash, icon: Icons.payments_outlined),
+              _MethodHint(label: l.posMethodCard, icon: Icons.credit_card),
               _MethodHint(
-                label: 'Қарз',
+                label: l.posMethodCredit,
                 icon: Icons.account_balance_wallet_outlined,
               ),
             ],
@@ -821,7 +826,7 @@ class _CheckoutPanel extends StatelessWidget {
                 ),
               ),
               icon: const Icon(Icons.point_of_sale, size: 26),
-              label: const Text('Пардохт (F9)'),
+              label: Text(l.posPay),
             ),
           ),
         ],
@@ -882,6 +887,7 @@ class _FKeyHintBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -892,14 +898,14 @@ class _FKeyHintBar extends StatelessWidget {
       child: Wrap(
         spacing: 12,
         runSpacing: 4,
-        children: const [
-          _Hint(keyLabel: 'F2', action: 'Ҷустуҷӯ'),
-          _Hint(keyLabel: 'F4', action: 'Тахфиф'),
-          _Hint(keyLabel: 'F9', action: 'Пардохт'),
-          _Hint(keyLabel: 'Del', action: 'Ҳазф'),
-          _Hint(keyLabel: '+/−', action: 'Миқдор'),
-          _Hint(keyLabel: 'F7', action: 'Бозгашт'),
-          _Hint(keyLabel: 'F10', action: 'Бастани смена'),
+        children: [
+          _Hint(keyLabel: 'F2', action: l.posHintSearch),
+          _Hint(keyLabel: 'F4', action: l.posHintDiscount),
+          _Hint(keyLabel: 'F9', action: l.posHintPay),
+          _Hint(keyLabel: 'Del', action: l.posHintRemove),
+          _Hint(keyLabel: '+/−', action: l.posHintQty),
+          _Hint(keyLabel: 'F7', action: l.posHintReturn),
+          _Hint(keyLabel: 'F10', action: l.posHintCloseShift),
         ],
       ),
     );
@@ -955,6 +961,7 @@ class _OpenShiftPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
@@ -979,14 +986,14 @@ class _OpenShiftPanel extends StatelessWidget {
                 const SizedBox(height: 12),
                 Center(
                   child: Text(
-                    'Смена кушода нашудааст',
+                    l.posNoShiftTitle,
                     style: theme.textTheme.titleLarge,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'Барои оғози фурӯш сменаро кушоед.',
+                    l.posNoShiftBody,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -1004,7 +1011,7 @@ class _OpenShiftPanel extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: onOpen,
                   icon: const Icon(Icons.lock_open),
-                  label: const Text('Кушодани смена'),
+                  label: Text(l.posOpenShift),
                 ),
               ],
             ),
@@ -1048,25 +1055,26 @@ class _OpeningCashDialogState extends State<_OpeningCashDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return AlertDialog(
-      title: const Text('Кушодани смена'),
+      title: Text(l.posOpenShift),
       content: Form(
         key: _formKey,
         child: TextFormField(
           controller: _controller,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(
-            labelText: 'Нақди ибтидоӣ *',
-            prefixIcon: Icon(Icons.payments_outlined),
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l.posOpeningCash,
+            prefixIcon: const Icon(Icons.payments_outlined),
+            border: const OutlineInputBorder(),
           ),
           validator: (v) {
             final parsed = double.tryParse(
               (v ?? '').trim().replaceAll(',', '.'),
             );
-            if (parsed == null) return 'Рақами дуруст ворид кунед';
-            if (parsed < 0) return 'Манфӣ шуда наметавонад';
+            if (parsed == null) return l.validationEnterNumber;
+            if (parsed < 0) return l.validationNotNegative;
             return null;
           },
           onFieldSubmitted: (_) => _submit(),
@@ -1075,9 +1083,9 @@ class _OpeningCashDialogState extends State<_OpeningCashDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Бекор'),
+          child: Text(l.commonCancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Кушодан')),
+        FilledButton(onPressed: _submit, child: Text(l.commonOpen)),
       ],
     );
   }
@@ -1120,25 +1128,26 @@ class _DiscountDialogState extends State<_DiscountDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return AlertDialog(
-      title: const Text('Тахфиф'),
+      title: Text(l.posDiscountTitle),
       content: TextField(
         controller: _controller,
         autofocus: true,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        decoration: const InputDecoration(
-          labelText: 'Маблағи тахфиф',
-          prefixIcon: Icon(Icons.percent),
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          labelText: l.posDiscountAmount,
+          prefixIcon: const Icon(Icons.percent),
+          border: const OutlineInputBorder(),
         ),
         onSubmitted: (_) => _submit(),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Бекор'),
+          child: Text(l.commonCancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Татбиқ')),
+        FilledButton(onPressed: _submit, child: Text(l.commonApply)),
       ],
     );
   }

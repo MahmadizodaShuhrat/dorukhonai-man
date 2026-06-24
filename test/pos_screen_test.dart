@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
 
 /// Hosts [PosScreen] with fake POS + products + branch repositories. The fake
 /// branch resolves to `br-1` (matching `sampleShift`).
@@ -33,7 +34,7 @@ Widget _host(FakePosRepository pos, {FakeProductsRepository? products}) {
             const Branch(id: 'br-1', name: 'Дорухонаи марказӣ', isCentral: true),
       ),
     ],
-    child: const MaterialApp(home: PosScreen()),
+    child: localizedApp(const PosScreen()),
   );
 }
 
@@ -275,8 +276,8 @@ void main() {
         (tester) async {
       // Drive the payment dialog directly for the validation rule.
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
+        localizedApp(
+          Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
                 onPressed: () => PaymentDialog.show(context, 100),
@@ -329,7 +330,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: ReceiptDialog(sale: sale))),
+        localizedApp(Scaffold(body: ReceiptDialog(sale: sale))),
       );
       await tester.pumpAndSettle();
 

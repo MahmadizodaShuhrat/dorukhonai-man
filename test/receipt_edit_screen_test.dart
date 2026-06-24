@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
 
 Widget _host(
   FakeReceiptsRepository receipts,
@@ -28,7 +29,7 @@ Widget _host(
         reference ?? FakeReferenceRepository(),
       ),
     ],
-    child: MaterialApp(home: ReceiptEditScreen(receiptId: receiptId)),
+    child: localizedApp(ReceiptEditScreen(receiptId: receiptId)),
   );
 }
 

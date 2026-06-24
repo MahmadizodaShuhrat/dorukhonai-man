@@ -2,6 +2,7 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../products/data/product_models.dart';
 import 'reference_list_provider.dart';
 import 'widgets/reference_list_view.dart';
@@ -12,16 +13,17 @@ class DrugGroupsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return ReferenceListView<DrugGroup>(
-      title: 'Гурӯҳҳо',
+      title: l.refGroupsTitle,
       icon: Icons.category_outlined,
-      newButtonLabel: 'Гурӯҳи нав',
-      searchHint: 'Ҷустуҷӯи гурӯҳ…',
-      emptyMessage: 'Гурӯҳ ёфт нашуд',
-      entityName: 'гурӯҳ',
+      newButtonLabel: l.refGroupNew,
+      searchHint: l.refGroupSearchHint,
+      emptyMessage: l.refGroupEmpty,
+      entityName: l.refGroupEntity,
       provider: drugGroupsListControllerProvider,
-      columns: const [
-        DataColumn2(label: Text('Ном'), size: ColumnSize.L),
+      columns: [
+        DataColumn2(label: Text(l.refColName), size: ColumnSize.L),
       ],
       cells: (context, g) => [DataCell(Text(g.name))],
       editorBuilder: (context, item, onDone) =>
@@ -72,10 +74,11 @@ class _DrugGroupEditorState extends ConsumerState<_DrugGroupEditor> {
         ? await _controller.update(value)
         : await _controller.create(value);
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     handleReferenceSave(
       context,
       result,
-      successMessage: _isEditing ? 'Гурӯҳ навсозӣ шуд' : 'Гурӯҳ сохта шуд',
+      successMessage: _isEditing ? l.refGroupUpdated : l.refGroupCreated,
       onSuccess: widget.onDone,
     );
   }
@@ -86,16 +89,18 @@ class _DrugGroupEditorState extends ConsumerState<_DrugGroupEditor> {
     if (!await confirmReferenceDelete(context, item.name)) return;
     final result = await _controller.delete(item.id);
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     handleReferenceSave(
       context,
       result,
-      successMessage: 'Гурӯҳ ҳазф шуд',
+      successMessage: l.refGroupDeleted,
       onSuccess: widget.onDone,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final isSaving = ref.watch(
       drugGroupsListControllerProvider.select((s) => s.isSaving),
     );
@@ -107,13 +112,12 @@ class _DrugGroupEditorState extends ConsumerState<_DrugGroupEditor> {
           TextFormField(
             controller: _name,
             autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Ном *',
-              prefixIcon: Icon(Icons.category_outlined),
+            decoration: InputDecoration(
+              labelText: l.refFieldName,
+              prefixIcon: const Icon(Icons.category_outlined),
             ),
-            validator: (v) => (v == null || v.trim().isEmpty)
-                ? 'Номи гурӯҳро ворид кунед'
-                : null,
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? l.refGroupValName : null,
             onFieldSubmitted: (_) => _save(),
           ),
           ReferenceEditorActions(

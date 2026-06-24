@@ -2,6 +2,7 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../products/data/product_models.dart';
 import 'reference_list_provider.dart';
 import 'widgets/reference_list_view.dart';
@@ -12,17 +13,18 @@ class ManufacturersScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return ReferenceListView<Manufacturer>(
-      title: 'Истеҳсолкунандагон',
+      title: l.refManufacturersTitle,
       icon: Icons.factory_outlined,
-      newButtonLabel: 'Истеҳсолкунандаи нав',
-      searchHint: 'Ҷустуҷӯи истеҳсолкунанда…',
-      emptyMessage: 'Истеҳсолкунанда ёфт нашуд',
-      entityName: 'истеҳсолкунанда',
+      newButtonLabel: l.refManufacturerNew,
+      searchHint: l.refManufacturerSearchHint,
+      emptyMessage: l.refManufacturerEmpty,
+      entityName: l.refManufacturerEntity,
       provider: manufacturersListControllerProvider,
-      columns: const [
-        DataColumn2(label: Text('Ном'), size: ColumnSize.L),
-        DataColumn2(label: Text('Кишвар')),
+      columns: [
+        DataColumn2(label: Text(l.refColName), size: ColumnSize.L),
+        DataColumn2(label: Text(l.refColCountry)),
       ],
       cells: (context, m) => [
         DataCell(Text(m.name)),
@@ -85,12 +87,13 @@ class _ManufacturerEditorState extends ConsumerState<_ManufacturerEditor> {
         ? await _controller.update(value)
         : await _controller.create(value);
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     handleReferenceSave(
       context,
       result,
       successMessage: _isEditing
-          ? 'Истеҳсолкунанда навсозӣ шуд'
-          : 'Истеҳсолкунанда сохта шуд',
+          ? l.refManufacturerUpdated
+          : l.refManufacturerCreated,
       onSuccess: widget.onDone,
     );
   }
@@ -101,16 +104,18 @@ class _ManufacturerEditorState extends ConsumerState<_ManufacturerEditor> {
     if (!await confirmReferenceDelete(context, item.name)) return;
     final result = await _controller.delete(item.id);
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     handleReferenceSave(
       context,
       result,
-      successMessage: 'Истеҳсолкунанда ҳазф шуд',
+      successMessage: l.refManufacturerDeleted,
       onSuccess: widget.onDone,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final isSaving = ref.watch(
       manufacturersListControllerProvider.select((s) => s.isSaving),
     );
@@ -123,20 +128,20 @@ class _ManufacturerEditorState extends ConsumerState<_ManufacturerEditor> {
             controller: _name,
             autofocus: true,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: 'Ном *',
-              prefixIcon: Icon(Icons.factory_outlined),
+            decoration: InputDecoration(
+              labelText: l.refFieldName,
+              prefixIcon: const Icon(Icons.factory_outlined),
             ),
             validator: (v) => (v == null || v.trim().isEmpty)
-                ? 'Номи истеҳсолкунандаро ворид кунед'
+                ? l.refManufacturerValName
                 : null,
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _country,
-            decoration: const InputDecoration(
-              labelText: 'Кишвар',
-              prefixIcon: Icon(Icons.public_outlined),
+            decoration: InputDecoration(
+              labelText: l.refColCountry,
+              prefixIcon: const Icon(Icons.public_outlined),
             ),
             onFieldSubmitted: (_) => _save(),
           ),

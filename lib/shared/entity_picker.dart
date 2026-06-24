@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api/api_result.dart';
 import '../features/reference/presentation/reference_providers.dart';
+import '../l10n/app_localizations.dart';
 
 /// Reusable searchable reference-data picker (TZ_03 §C.5/P2). Shows entity
 /// NAMES in a typeahead dropdown and yields the selected id via [onChanged] —
@@ -54,6 +55,7 @@ class _EntityPickerState extends ConsumerState<EntityPicker> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     // Watch the unfiltered list to resolve the current selection's label.
     final all = ref.watch(widget.optionsProvider(''));
     all.whenData((options) {
@@ -74,7 +76,7 @@ class _EntityPickerState extends ConsumerState<EntityPicker> {
       validator: (_) {
         if (widget.isRequired &&
             (widget.selectedId == null || widget.selectedId!.isEmpty)) {
-          return '${widget.label}-ро интихоб кунед';
+          return l.refPickerSelect(widget.label);
         }
         return null;
       },
@@ -162,6 +164,7 @@ class _EntitySearchDialogState extends ConsumerState<_EntitySearchDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final async = ref.watch(widget.optionsProvider(_search));
     return AlertDialog(
       title: Text(widget.title),
@@ -172,9 +175,9 @@ class _EntitySearchDialogState extends ConsumerState<_EntitySearchDialog> {
           children: [
             TextField(
               autofocus: true,
-              decoration: const InputDecoration(
-                hintText: 'Ҷустуҷӯ…',
-                prefixIcon: Icon(Icons.search),
+              decoration: InputDecoration(
+                hintText: l.refSearchHint,
+                prefixIcon: const Icon(Icons.search),
               ),
               onChanged: (v) => setState(() => _search = v),
             ),
@@ -185,13 +188,13 @@ class _EntitySearchDialogState extends ConsumerState<_EntitySearchDialog> {
                     const Center(child: CircularProgressIndicator()),
                 error: (err, _) => Center(
                   child: Text(
-                    err is Failure ? err.message : 'Хатои боркунӣ',
+                    err is Failure ? err.message : l.refLoadError,
                     textAlign: TextAlign.center,
                   ),
                 ),
                 data: (options) {
                   if (options.isEmpty) {
-                    return const Center(child: Text('Чизе ёфт нашуд'));
+                    return Center(child: Text(l.commandNothingFound));
                   }
                   return ListView.builder(
                     itemCount: options.length,
@@ -216,7 +219,7 @@ class _EntitySearchDialogState extends ConsumerState<_EntitySearchDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Бекор'),
+          child: Text(l.commonCancel),
         ),
       ],
     );

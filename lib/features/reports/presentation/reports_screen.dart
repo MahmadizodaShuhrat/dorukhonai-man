@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_result.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_data_table.dart';
 import '../../../shared/app_scaffold.dart';
 import '../../../shared/app_toast.dart';
@@ -26,11 +27,12 @@ class ReportsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final filter = ref.watch(reportsFilterProvider);
     return AppScaffold(
-      title: 'Ҳисоботҳо',
+      title: l.reportsTitle,
       icon: Icons.bar_chart,
-      subtitle: filter.kind.label,
+      subtitle: filter.kind.label(l),
       padBody: false,
       actions: [
         _ExportButton(
@@ -71,10 +73,11 @@ class ReportsScreen extends ConsumerWidget {
     WidgetRef ref, {
     required bool asPdf,
   }) async {
+    final l = AppLocalizations.of(context);
     final filter = ref.read(reportsFilterProvider);
-    final table = _currentTable(ref, filter);
+    final table = _currentTable(l, ref, filter);
     if (table == null || table.rows.isEmpty) {
-      AppToast.info(context, 'Барои содирот маълумот нест.');
+      AppToast.info(context, l.reportsNoExportData);
       return;
     }
     const exporter = ReportExporter();
@@ -84,18 +87,22 @@ class ReportsScreen extends ConsumerWidget {
       } else {
         final result = await exporter.saveCsv(table);
         if (context.mounted) {
-          AppToast.success(context, 'CSV нигоҳ дошта шуд: ${result.path}');
+          AppToast.success(context, l.reportsCsvSaved(result.path));
         }
       }
     } catch (e) {
       if (context.mounted) {
-        AppToast.error(context, 'Содирот ноком шуд: $e');
+        AppToast.error(context, l.reportsExportFailed('$e'));
       }
     }
   }
 
   /// Builds the export table for the active view from already-loaded data.
-  ReportTable? _currentTable(WidgetRef ref, ReportsFilter filter) {
+  ReportTable? _currentTable(
+    AppLocalizations l,
+    WidgetRef ref,
+    ReportsFilter filter,
+  ) {
     final rangeLine =
         '${Formatters.date(filter.range.from)} — ${Formatters.date(filter.range.to)}';
     switch (filter.kind) {
@@ -103,9 +110,16 @@ class ReportsScreen extends ConsumerWidget {
         final rows = ref.read(salesReportProvider).valueOrNull;
         if (rows == null) return null;
         return ReportTable(
-          title: 'Ҳисоботи фурӯш (${filter.groupBy.label})',
+          title: l.reportsTitleSales(filter.groupBy.label(l)),
           subtitle: rangeLine,
-          headers: const ['Гурӯҳ', 'Чек', 'Миқдор', 'Зерҷамъ', 'Тахфиф', 'Ҳамагӣ'],
+          headers: [
+            l.reportColGroup,
+            l.reportColReceipt,
+            l.reportColQty,
+            l.reportColSubtotal,
+            l.reportColDiscount,
+            l.reportColTotal,
+          ],
           numericColumns: const {1, 2, 3, 4, 5},
           rows: [
             for (final r in rows)
@@ -123,23 +137,28 @@ class ReportsScreen extends ConsumerWidget {
         final p = ref.read(profitReportProvider).valueOrNull;
         if (p == null) return null;
         return ReportTable(
-          title: 'Ҳисоботи фоида',
+          title: l.reportsTitleProfit,
           subtitle: rangeLine,
-          headers: const ['Нишондиҳанда', 'Маблағ'],
+          headers: [l.reportColMetric, l.reportColAmount],
           numericColumns: const {1},
           rows: [
-            ['Даромад', Formatters.money(p.revenue)],
-            ['Арзиши аслӣ', Formatters.money(p.cost)],
-            ['Фоида', Formatters.money(p.profit)],
-            ['Маржа', '${(p.margin * 100).toStringAsFixed(1)}%'],
+            [l.reportRevenue, Formatters.money(p.revenue)],
+            [l.reportCost, Formatters.money(p.cost)],
+            [l.reportProfit, Formatters.money(p.profit)],
+            [l.reportMargin, '${(p.margin * 100).toStringAsFixed(1)}%'],
           ],
         );
       case ReportKind.stockValue:
         final rows = ref.read(stockValueReportProvider).valueOrNull;
         if (rows == null) return null;
         return ReportTable(
-          title: 'Арзиши анбор',
-          headers: const ['Дору', 'Миқдор', 'Арзиши харид', 'Арзиши фурӯш'],
+          title: l.reportsTitleStockValue,
+          headers: [
+            l.reportColDrug,
+            l.reportColQty,
+            l.reportColPurchaseValue,
+            l.reportColSaleValue,
+          ],
           numericColumns: const {1, 2, 3},
           rows: [
             for (final r in rows)
@@ -155,8 +174,14 @@ class ReportsScreen extends ConsumerWidget {
         final rows = ref.read(expiringReportProvider).valueOrNull;
         if (rows == null) return null;
         return ReportTable(
-          title: 'Доруҳои мӯҳлаташ наздик',
-          headers: const ['Дору', 'Серия', 'Мӯҳлат', 'Рӯз', 'Бақия'],
+          title: l.reportsTitleExpiring,
+          headers: [
+            l.reportColDrug,
+            l.reportColSeries,
+            l.reportColExpiry,
+            l.reportColDays,
+            l.reportColRemaining,
+          ],
           numericColumns: const {3, 4},
           rows: [
             for (final r in rows)
@@ -173,29 +198,30 @@ class ReportsScreen extends ConsumerWidget {
         final z = ref.read(zReportProvider).valueOrNull;
         if (z == null) return null;
         return ReportTable(
-          title: 'Z-ҳисобот · ${z.shiftId}',
-          headers: const ['Нишондиҳанда', 'Маблағ'],
+          title: l.reportsTitleZReport(z.shiftId),
+          headers: [l.reportColMetric, l.reportColAmount],
           numericColumns: const {1},
-          rows: _zRows(z),
+          rows: _zRows(l, z),
         );
     }
   }
 }
 
 /// Rows shared by the Z-report table + export.
-List<List<String>> _zRows(ZReport z) => [
-  ['Кушодашуда', Formatters.dateTime(z.openedAt)],
-  if (z.closedAt != null) ['Басташуда', Formatters.dateTime(z.closedAt!)],
-  ['Маблағи аввал', Formatters.money(z.openingCash)],
-  ['Шумораи фурӯш', '${z.salesCount}'],
-  ['Фурӯши умумӣ', Formatters.money(z.totalSales)],
-  ['Бозгашт', Formatters.money(z.totalReturns)],
-  ['Софӣ', Formatters.money(z.netTotal)],
-  ['Нақд', Formatters.money(z.amountFor(PaymentMethod.cash))],
-  ['Корт', Formatters.money(z.amountFor(PaymentMethod.card))],
-  ['Қарз', Formatters.money(z.amountFor(PaymentMethod.credit))],
-  ['Нақди интизорӣ', Formatters.money(z.expectedCash)],
-  if (z.closingCash != null) ['Нақди ҳақиқӣ', Formatters.money(z.closingCash!)],
+List<List<String>> _zRows(AppLocalizations l, ZReport z) => [
+  [l.reportZOpened, Formatters.dateTime(z.openedAt)],
+  if (z.closedAt != null) [l.reportZClosed, Formatters.dateTime(z.closedAt!)],
+  [l.reportZOpeningCash, Formatters.money(z.openingCash)],
+  [l.reportZSalesCount, '${z.salesCount}'],
+  [l.reportZTotalSales, Formatters.money(z.totalSales)],
+  [l.reportZReturns, Formatters.money(z.totalReturns)],
+  [l.reportZNet, Formatters.money(z.netTotal)],
+  [l.reportZCash, Formatters.money(z.amountFor(PaymentMethod.cash))],
+  [l.reportZCard, Formatters.money(z.amountFor(PaymentMethod.card))],
+  [l.reportZCredit, Formatters.money(z.amountFor(PaymentMethod.credit))],
+  [l.reportZExpectedCash, Formatters.money(z.expectedCash)],
+  if (z.closingCash != null)
+    [l.reportZActualCash, Formatters.money(z.closingCash!)],
 ];
 
 String _qty(double q) =>
@@ -210,6 +236,7 @@ class _ReportRail extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final active = ref.watch(reportsFilterProvider).kind;
     return SizedBox(
@@ -231,7 +258,7 @@ class _ReportRail extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   leading: Icon(_iconFor(kind), size: 20),
-                  title: Text(kind.label),
+                  title: Text(kind.label(l)),
                   selected: kind == active,
                   onTap: () =>
                       ref.read(reportsFilterProvider.notifier).setKind(kind),
@@ -262,6 +289,7 @@ class _DateRangeBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final controller = ref.read(reportsFilterProvider.notifier);
     final range = ref.watch(reportsFilterProvider).range;
     return Wrap(
@@ -270,26 +298,26 @@ class _DateRangeBar extends ConsumerWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _DateField(
-          label: 'Аз',
+          label: l.reportDateFrom,
           value: range.from,
           onChanged: controller.setFrom,
         ),
         _DateField(
-          label: 'То',
+          label: l.reportDateTo,
           value: range.to,
           onChanged: controller.setTo,
         ),
         FilledButton.tonal(
           onPressed: () => controller.setRange(ReportDateRange.today()),
-          child: const Text('Имрӯз'),
+          child: Text(l.reportPresetToday),
         ),
         FilledButton.tonal(
           onPressed: () => controller.setRange(ReportDateRange.lastDays(7)),
-          child: const Text('7 рӯз'),
+          child: Text(l.reportPreset7Days),
         ),
         FilledButton.tonal(
           onPressed: () => controller.setRange(ReportDateRange.thisMonth()),
-          child: const Text('Ин моҳ'),
+          child: Text(l.reportPresetThisMonth),
         ),
       ],
     );
@@ -374,21 +402,22 @@ class _AsyncReport<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return value.when(
       loading: () => const LoadingState(),
       error: (err, _) => EmptyState(
         icon: Icons.error_outline,
-        title: 'Хатогӣ',
-        message: err is Failure ? err.message : 'Боркунӣ ноком шуд.',
+        title: l.commonError,
+        message: err is Failure ? err.message : l.commonLoadFailed,
         action: FilledButton.tonalIcon(
           onPressed: onRetry,
           icon: const Icon(Icons.refresh),
-          label: const Text('Аз нав'),
+          label: Text(l.commonRetry),
         ),
       ),
       data: (data) {
         if (isEmpty?.call(data) ?? false) {
-          return const EmptyState(message: 'Маълумот нест');
+          return EmptyState(message: l.commonNoData);
         }
         return builder(data);
       },
@@ -411,6 +440,7 @@ class _SalesView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final filter = ref.watch(reportsFilterProvider);
     final async = ref.watch(salesReportProvider);
     return _ReportBody(
@@ -422,7 +452,7 @@ class _SalesView extends ConsumerWidget {
           SegmentedButton<SalesGroupBy>(
             segments: [
               for (final g in SalesGroupBy.values)
-                ButtonSegment(value: g, label: Text(g.label)),
+                ButtonSegment(value: g, label: Text(g.label(l))),
             ],
             selected: {filter.groupBy},
             onSelectionChanged: (s) =>
@@ -446,12 +476,12 @@ class _SalesView extends ConsumerWidget {
               Expanded(
                 child: AppDataTable(
                   columns: [
-                    const DataColumn2(label: Text('Гурӯҳ'), size: ColumnSize.L),
-                    _numCol('Чек'),
-                    _numCol('Миқдор'),
-                    _numCol('Зерҷамъ', size: ColumnSize.M),
-                    _numCol('Тахфиф', size: ColumnSize.M),
-                    _numCol('Ҳамагӣ', size: ColumnSize.M),
+                    DataColumn2(label: Text(l.reportColGroup), size: ColumnSize.L),
+                    _numCol(l.reportColReceipt),
+                    _numCol(l.reportColQty),
+                    _numCol(l.reportColSubtotal, size: ColumnSize.M),
+                    _numCol(l.reportColDiscount, size: ColumnSize.M),
+                    _numCol(l.reportColTotal, size: ColumnSize.M),
                   ],
                   rows: [
                     for (final r in rows)
@@ -484,9 +514,10 @@ class _SalesChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     if (rows.isEmpty) {
-      return const Center(child: Text('Барои график маълумот нест'));
+      return Center(child: Text(l.reportNoChartData));
     }
     final maxY = rows.fold<double>(0, (m, r) => r.total > m ? r.total : m);
     return BarChart(
@@ -556,6 +587,7 @@ class _ProfitView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final async = ref.watch(profitReportProvider);
     return _ReportBody(
       filters: const _DateRangeBar(),
@@ -569,23 +601,23 @@ class _ProfitView extends ConsumerWidget {
             runSpacing: 16,
             children: [
               _MetricCard(
-                label: 'Даромад',
+                label: l.reportRevenue,
                 value: Formatters.money(p.revenue),
                 icon: Icons.payments_outlined,
               ),
               _MetricCard(
-                label: 'Арзиши аслӣ',
+                label: l.reportCost,
                 value: Formatters.money(p.cost),
                 icon: Icons.shopping_cart_outlined,
               ),
               _MetricCard(
-                label: 'Фоида',
+                label: l.reportProfit,
                 value: Formatters.money(p.profit),
                 icon: Icons.trending_up,
                 tone: p.profit >= 0 ? StatusTone.ok : StatusTone.danger,
               ),
               _MetricCard(
-                label: 'Маржа',
+                label: l.reportMargin,
                 value: '${(p.margin * 100).toStringAsFixed(1)}%',
                 icon: Icons.percent,
               ),
@@ -612,6 +644,7 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return Container(
       width: 220,
@@ -647,7 +680,7 @@ class _MetricCard extends StatelessWidget {
           if (tone != null) ...[
             const SizedBox(height: 8),
             StatusChip(
-              label: tone == StatusTone.ok ? 'Мусбат' : 'Манфӣ',
+              label: tone == StatusTone.ok ? l.reportPositive : l.reportNegative,
               tone: tone!,
               dense: true,
             ),
@@ -667,6 +700,7 @@ class _StockValueView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final async = ref.watch(stockValueReportProvider);
     return _ReportBody(
       child: _AsyncReport<List<StockValueRow>>(
@@ -684,12 +718,12 @@ class _StockValueView extends ConsumerWidget {
                 spacing: 16,
                 children: [
                   _MetricCard(
-                    label: 'Арзиши харид',
+                    label: l.reportColPurchaseValue,
                     value: Formatters.money(totalPurchase),
                     icon: Icons.inventory_2_outlined,
                   ),
                   _MetricCard(
-                    label: 'Арзиши фурӯш',
+                    label: l.reportColSaleValue,
                     value: Formatters.money(totalSale),
                     icon: Icons.sell_outlined,
                   ),
@@ -699,10 +733,10 @@ class _StockValueView extends ConsumerWidget {
               Expanded(
                 child: AppDataTable(
                   columns: [
-                    const DataColumn2(label: Text('Дору'), size: ColumnSize.L),
-                    _numCol('Миқдор'),
-                    _numCol('Арзиши харид', size: ColumnSize.M),
-                    _numCol('Арзиши фурӯш', size: ColumnSize.M),
+                    DataColumn2(label: Text(l.reportColDrug), size: ColumnSize.L),
+                    _numCol(l.reportColQty),
+                    _numCol(l.reportColPurchaseValue, size: ColumnSize.M),
+                    _numCol(l.reportColSaleValue, size: ColumnSize.M),
                   ],
                   rows: [
                     for (final r in rows)
@@ -734,6 +768,7 @@ class _ExpiringView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final async = ref.watch(expiringReportProvider);
     return _ReportBody(
       child: _AsyncReport<List<StockItem>>(
@@ -742,11 +777,11 @@ class _ExpiringView extends ConsumerWidget {
         isEmpty: (rows) => rows.isEmpty,
         builder: (rows) => AppDataTable(
           columns: [
-            const DataColumn2(label: Text('Дору'), size: ColumnSize.L),
-            const DataColumn2(label: Text('Серия')),
-            const DataColumn2(label: Text('Мӯҳлат')),
-            _numCol('Рӯз'),
-            _numCol('Бақия'),
+            DataColumn2(label: Text(l.reportColDrug), size: ColumnSize.L),
+            DataColumn2(label: Text(l.reportColSeries)),
+            DataColumn2(label: Text(l.reportColExpiry)),
+            _numCol(l.reportColDays),
+            _numCol(l.reportColRemaining),
           ],
           rows: [
             for (final r in rows)
@@ -812,6 +847,7 @@ class _ZReportViewState extends ConsumerState<_ZReportView> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final async = ref.watch(zReportProvider);
     return _ReportBody(
       filters: Row(
@@ -820,9 +856,9 @@ class _ZReportViewState extends ConsumerState<_ZReportView> {
             width: 320,
             child: TextField(
               controller: _shiftController,
-              decoration: const InputDecoration(
-                labelText: 'ID-и смена',
-                prefixIcon: Icon(Icons.tag, size: 16),
+              decoration: InputDecoration(
+                labelText: l.reportShiftIdField,
+                prefixIcon: const Icon(Icons.tag, size: 16),
                 isDense: true,
               ),
               onSubmitted: (v) =>
@@ -835,7 +871,7 @@ class _ZReportViewState extends ConsumerState<_ZReportView> {
                 .read(reportsFilterProvider.notifier)
                 .setShiftId(_shiftController.text.trim()),
             icon: const Icon(Icons.search),
-            label: const Text('Кушодан'),
+            label: Text(l.commonOpen),
           ),
         ],
       ),
@@ -844,16 +880,16 @@ class _ZReportViewState extends ConsumerState<_ZReportView> {
         onRetry: () => ref.invalidate(zReportProvider),
         builder: (z) {
           if (z == null) {
-            return const EmptyState(
+            return EmptyState(
               icon: Icons.receipt_long,
-              message: 'ID-и смена ворид кунед.',
+              message: l.reportEnterShiftId,
             );
           }
-          final pairs = _zRows(z);
+          final pairs = _zRows(l, z);
           return AppDataTable(
-            columns: const [
-              DataColumn2(label: Text('Нишондиҳанда'), size: ColumnSize.L),
-              DataColumn2(label: Text('Маблағ'), numeric: true),
+            columns: [
+              DataColumn2(label: Text(l.reportColMetric), size: ColumnSize.L),
+              DataColumn2(label: Text(l.reportColAmount), numeric: true),
             ],
             rows: [
               for (final pair in pairs)

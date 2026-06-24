@@ -2,6 +2,7 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../products/data/product_models.dart';
 import 'reference_list_provider.dart';
 import 'widgets/reference_list_view.dart';
@@ -12,16 +13,17 @@ class UnitsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return ReferenceListView<Unit>(
-      title: 'Воҳидҳо',
+      title: l.refUnitsTitle,
       icon: Icons.straighten_outlined,
-      newButtonLabel: 'Воҳиди нав',
-      searchHint: 'Ҷустуҷӯи воҳид…',
-      emptyMessage: 'Воҳид ёфт нашуд',
-      entityName: 'воҳид',
+      newButtonLabel: l.refUnitNew,
+      searchHint: l.refUnitSearchHint,
+      emptyMessage: l.refUnitEmpty,
+      entityName: l.refUnitEntity,
       provider: unitsListControllerProvider,
-      columns: const [
-        DataColumn2(label: Text('Ном'), size: ColumnSize.L),
+      columns: [
+        DataColumn2(label: Text(l.refColName), size: ColumnSize.L),
       ],
       cells: (context, u) => [DataCell(Text(u.name))],
       editorBuilder: (context, item, onDone) =>
@@ -68,10 +70,11 @@ class _UnitEditorState extends ConsumerState<_UnitEditor> {
         ? await _controller.update(value)
         : await _controller.create(value);
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     handleReferenceSave(
       context,
       result,
-      successMessage: _isEditing ? 'Воҳид навсозӣ шуд' : 'Воҳид сохта шуд',
+      successMessage: _isEditing ? l.refUnitUpdated : l.refUnitCreated,
       onSuccess: widget.onDone,
     );
   }
@@ -82,16 +85,18 @@ class _UnitEditorState extends ConsumerState<_UnitEditor> {
     if (!await confirmReferenceDelete(context, item.name)) return;
     final result = await _controller.delete(item.id);
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     handleReferenceSave(
       context,
       result,
-      successMessage: 'Воҳид ҳазф шуд',
+      successMessage: l.refUnitDeleted,
       onSuccess: widget.onDone,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final isSaving = ref.watch(
       unitsListControllerProvider.select((s) => s.isSaving),
     );
@@ -103,13 +108,12 @@ class _UnitEditorState extends ConsumerState<_UnitEditor> {
           TextFormField(
             controller: _name,
             autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Ном *',
-              prefixIcon: Icon(Icons.straighten_outlined),
+            decoration: InputDecoration(
+              labelText: l.refFieldName,
+              prefixIcon: const Icon(Icons.straighten_outlined),
             ),
-            validator: (v) => (v == null || v.trim().isEmpty)
-                ? 'Номи воҳидро ворид кунед'
-                : null,
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? l.refUnitValName : null,
             onFieldSubmitted: (_) => _save(),
           ),
           ReferenceEditorActions(

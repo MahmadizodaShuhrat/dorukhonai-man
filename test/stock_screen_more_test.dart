@@ -3,17 +3,22 @@ import 'package:dorukhonai_man/features/stock/data/stock_models.dart';
 import 'package:dorukhonai_man/features/stock/data/stock_repository.dart';
 import 'package:dorukhonai_man/features/stock/presentation/stock_detail_panel.dart';
 import 'package:dorukhonai_man/features/stock/presentation/stock_screen.dart';
+import 'package:dorukhonai_man/l10n/app_localizations.dart';
 import 'package:dorukhonai_man/shared/status_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'stock_support.dart';
+import 'support/l10n_harness.dart';
+
+/// Synchronous Tajik localizations for unit-testing context-free helpers.
+final AppLocalizations _l = lookupAppLocalizations(const Locale('tg'));
 
 Widget _host(FakeStockRepository repo) {
   return ProviderScope(
     overrides: [stockRepositoryProvider.overrideWithValue(repo)],
-    child: const MaterialApp(home: StockScreen()),
+    child: localizedApp(const StockScreen()),
   );
 }
 
@@ -36,8 +41,8 @@ void main() {
     });
 
     test('expired rows label as Гузашта', () {
-      expect(expiryLabel(-3), 'Гузашта');
-      expect(expiryLabel(12), '12 р');
+      expect(expiryLabel(_l, -3), 'Гузашта');
+      expect(expiryLabel(_l, 12), '12 р');
     });
   });
 
@@ -182,10 +187,10 @@ void main() {
   });
 
   test('movementTypeLabel maps all known wire values', () {
-    expect(movementTypeLabel('Sale'), 'Фурӯш');
-    expect(movementTypeLabel('Return'), 'Бозгашт');
-    expect(movementTypeLabel('Adjustment'), 'Тасҳеҳ');
-    expect(movementTypeLabel('Transfer'), 'Интиқол');
-    expect(movementTypeLabel('Unknown'), 'Unknown');
+    expect(movementTypeLabel(_l, 'Sale'), 'Фурӯш');
+    expect(movementTypeLabel(_l, 'Return'), 'Бозгашт');
+    expect(movementTypeLabel(_l, 'Adjustment'), 'Тасҳеҳ');
+    expect(movementTypeLabel(_l, 'Transfer'), 'Интиқол');
+    expect(movementTypeLabel(_l, 'Unknown'), 'Unknown');
   });
 }

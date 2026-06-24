@@ -12,12 +12,17 @@ import 'package:dorukhonai_man/features/operations/presentation/operations_widge
 import 'package:dorukhonai_man/features/operations/presentation/supplier_return_screen.dart';
 import 'package:dorukhonai_man/features/operations/presentation/write_off_screen.dart';
 import 'package:dorukhonai_man/features/reference/data/reference_repository.dart';
+import 'package:dorukhonai_man/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'operations_support.dart';
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
+
+/// Synchronous Tajik localizations for unit-testing context-free helpers.
+final AppLocalizations _l = lookupAppLocalizations(const Locale('tg'));
 
 OperationLine _line({
   String batchId = 'b1',
@@ -68,16 +73,17 @@ void main() {
 
   group('validateOperationLines', () {
     test('requires a resolved branch and at least one line', () {
-      expect(validateOperationLines(const [], 'br-1'), isNotNull);
-      expect(validateOperationLines([_line()], null), isNotNull);
-      expect(validateOperationLines([_line()], ''), isNotNull);
+      expect(validateOperationLines(_l, const [], 'br-1'), isNotNull);
+      expect(validateOperationLines(_l, [_line()], null), isNotNull);
+      expect(validateOperationLines(_l, [_line()], ''), isNotNull);
     });
 
     test('rejects qty>onhand when enforced, allows it for inventory', () {
       final over = [_line(onHand: 2, quantity: 5)];
-      expect(validateOperationLines(over, 'br-1'), isNotNull);
+      expect(validateOperationLines(_l, over, 'br-1'), isNotNull);
       expect(
         validateOperationLines(
+          _l,
           over,
           'br-1',
           enforceMaxOnHand: false,
@@ -88,8 +94,10 @@ void main() {
     });
 
     test('valid write-off draft passes', () {
-      expect(validateOperationLines([_line(quantity: 2, onHand: 10)], 'br-1'),
-          isNull);
+      expect(
+        validateOperationLines(_l, [_line(quantity: 2, onHand: 10)], 'br-1'),
+        isNull,
+      );
     });
   });
 
@@ -102,7 +110,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: _overrides(repo),
-          child: const MaterialApp(home: Scaffold(body: WriteOffScreen())),
+          child: localizedApp(const Scaffold(body: WriteOffScreen())),
         ),
       );
       await tester.pumpAndSettle();
@@ -135,7 +143,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: _overrides(repo),
-          child: const MaterialApp(home: Scaffold(body: WriteOffScreen())),
+          child: localizedApp(const Scaffold(body: WriteOffScreen())),
         ),
       );
       await tester.pumpAndSettle();
@@ -177,7 +185,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: _overrides(repo),
-          child: const MaterialApp(home: Scaffold(body: InventoryScreen())),
+          child: localizedApp(const Scaffold(body: InventoryScreen())),
         ),
       );
       await tester.pumpAndSettle();
@@ -207,7 +215,7 @@ void main() {
         ProviderScope(
           overrides: _overrides(repo),
           child:
-              const MaterialApp(home: Scaffold(body: SupplierReturnScreen())),
+              localizedApp(const Scaffold(body: SupplierReturnScreen())),
         ),
       );
       await tester.pumpAndSettle();

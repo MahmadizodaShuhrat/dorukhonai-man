@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
 
 Widget _host(FakeReceiptsRepository repo, {FakeReferenceRepository? reference}) {
   return ProviderScope(
@@ -22,7 +23,7 @@ Widget _host(FakeReceiptsRepository repo, {FakeReferenceRepository? reference}) 
     ],
     // ReceiptsListScreen renders INSIDE the desktop shell, which provides the
     // Scaffold/Material/ScaffoldMessenger ancestors — mirror that here.
-    child: const MaterialApp(home: Scaffold(body: ReceiptsListScreen())),
+    child: localizedApp(const Scaffold(body: ReceiptsListScreen())),
   );
 }
 

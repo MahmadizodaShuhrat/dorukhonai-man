@@ -2,6 +2,7 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_data_table.dart';
 import 'operations_providers.dart';
 
@@ -11,21 +12,22 @@ import 'operations_providers.dart';
 /// each quantity must be positive and `<= onHand` (server also rejects, but the
 /// client guards early). For inventory the counted quantity may differ freely.
 String? validateOperationLines(
+  AppLocalizations l,
   List<OperationLine> lines,
   String? branchId, {
   bool enforceMaxOnHand = true,
   bool requirePositive = true,
 }) {
   if (branchId == null || branchId.isEmpty) {
-    return 'Филиал ҳанӯз муайян нашуд. Лутфан дубора кӯшиш кунед.';
+    return l.opValBranchUnresolved;
   }
-  if (lines.isEmpty) return 'Ҳадди ақал як партия илова кунед.';
-  for (final l in lines) {
-    if (requirePositive && l.quantity <= 0) {
-      return 'Миқдори «${l.productName}» бояд аз сифр зиёд бошад.';
+  if (lines.isEmpty) return l.opValAtLeastOneBatch;
+  for (final line in lines) {
+    if (requirePositive && line.quantity <= 0) {
+      return l.opValQtyPositive(line.productName);
     }
-    if (enforceMaxOnHand && l.quantity > l.onHand) {
-      return 'Миқдори «${l.productName}» аз бақия (${_qty(l.onHand)}) зиёд аст.';
+    if (enforceMaxOnHand && line.quantity > line.onHand) {
+      return l.opValQtyMax(line.productName, _qty(line.onHand));
     }
   }
   return null;
@@ -40,33 +42,34 @@ class OperationLinesTable extends ConsumerWidget {
     super.key,
     required this.provider,
     required this.quantityLabel,
-    this.emptyMessage = 'Партия илова кунед.',
+    this.emptyMessage,
     this.showDiscrepancy = false,
   });
 
   final StateNotifierProvider<OperationDraftController, List<OperationLine>>
       provider;
   final String quantityLabel;
-  final String emptyMessage;
+  final String? emptyMessage;
 
   /// When true (Инвентаризатсия) a "Фарқият" column shows counted − on-hand.
   final bool showDiscrepancy;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final lines = ref.watch(provider);
     final controller = ref.read(provider.notifier);
     return AppDataTable(
       minWidth: showDiscrepancy ? 720 : 620,
-      emptyMessage: emptyMessage,
+      emptyMessage: emptyMessage ?? l.opEmptyDefault,
       emptyIcon: Icons.playlist_add,
       columns: [
-        const DataColumn2(label: Text('Дору'), size: ColumnSize.L),
-        const DataColumn2(label: Text('Серия')),
-        const DataColumn2(label: Text('Бақия'), numeric: true),
+        DataColumn2(label: Text(l.opColDrug), size: ColumnSize.L),
+        DataColumn2(label: Text(l.opColSeries)),
+        DataColumn2(label: Text(l.opColRemaining), numeric: true),
         DataColumn2(label: Text(quantityLabel), fixedWidth: 160),
         if (showDiscrepancy)
-          const DataColumn2(label: Text('Фарқият'), numeric: true),
+          DataColumn2(label: Text(l.opColDiscrepancy), numeric: true),
         const DataColumn2(label: Text(''), fixedWidth: 56),
       ],
       rows: [
@@ -91,7 +94,7 @@ class OperationLinesTable extends ConsumerWidget {
                 ),
               DataCell(
                 IconButton(
-                  tooltip: 'Ҳазф',
+                  tooltip: l.commonDelete,
                   icon: const Icon(Icons.delete_outline, size: 20),
                   onPressed: () => controller.removeAt(i),
                 ),

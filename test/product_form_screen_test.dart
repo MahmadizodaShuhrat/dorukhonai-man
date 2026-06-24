@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
 
 Widget _host(FakeProductsRepository repo) {
   return ProviderScope(
@@ -14,7 +15,7 @@ Widget _host(FakeProductsRepository repo) {
       // The form's EntityPickers (group/manufacturer/unit) read reference data.
       referenceRepositoryProvider.overrideWithValue(FakeReferenceRepository()),
     ],
-    child: const MaterialApp(home: ProductFormScreen()),
+    child: localizedApp(const ProductFormScreen()),
   );
 }
 

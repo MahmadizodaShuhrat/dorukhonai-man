@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_result.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../stock/data/stock_models.dart';
 import '../../stock/data/stock_repository.dart';
 
@@ -77,12 +78,13 @@ class _BatchPickerDialogState extends ConsumerState<BatchPickerDialog> {
       size: 25,
     );
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     switch (result) {
       case Success(:final data):
         setState(() {
           _results = data.items;
           _isLoading = false;
-          _message = data.items.isEmpty ? 'Партия ёфт нашуд' : null;
+          _message = data.items.isEmpty ? l.batchPickerEmpty : null;
         });
       case Error(:final failure):
         setState(() {
@@ -95,6 +97,7 @@ class _BatchPickerDialogState extends ConsumerState<BatchPickerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return Dialog(
       child: ConstrainedBox(
@@ -106,17 +109,17 @@ class _BatchPickerDialogState extends ConsumerState<BatchPickerDialog> {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Интихоби партия',
-                      style: TextStyle(
+                      l.batchPickerTitle,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Пӯшидан',
+                    tooltip: l.commonClose,
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
@@ -129,10 +132,10 @@ class _BatchPickerDialogState extends ConsumerState<BatchPickerDialog> {
                 autofocus: true,
                 textInputAction: TextInputAction.search,
                 onChanged: _onChanged,
-                decoration: const InputDecoration(
-                  hintText: 'Ҷустуҷӯи дору ё штрих-код…',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  hintText: l.batchPickerSearchHint,
+                  prefixIcon: const Icon(Icons.search),
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
               ),
@@ -150,12 +153,14 @@ class _BatchPickerDialogState extends ConsumerState<BatchPickerDialog> {
                             dense: true,
                             title: Text(item.productName),
                             subtitle: Text(
-                              'Серия: ${item.seriesNumber} · '
-                              'то ${Formatters.date(item.expiryDate)}',
+                              l.batchPickerSubtitle(
+                                item.seriesNumber,
+                                Formatters.date(item.expiryDate),
+                              ),
                               style: theme.textTheme.bodySmall,
                             ),
                             trailing: Text(
-                              'Бақия: ${_qty(item.quantity)}',
+                              l.batchPickerRemaining(_qty(item.quantity)),
                               style: theme.textTheme.bodySmall,
                             ),
                             onTap: () => Navigator.of(context).pop(item),

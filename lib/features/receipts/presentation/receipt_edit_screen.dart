@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_result.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_toast.dart';
 import '../../../shared/empty_state.dart';
 import '../../../shared/entity_picker.dart';
@@ -147,21 +148,22 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
   }
 
   /// Validates the whole document, returning the first problem or `null`.
-  String? _validate() {
+  String? _validate(AppLocalizations l) {
     if (_supplierId == null || _supplierId!.isEmpty) {
-      return 'Таъминкунандаро интихоб кунед';
+      return l.receiptValSupplier;
     }
-    if (_branchId.text.trim().isEmpty) return 'Филиалро ворид кунед';
-    if (_drafts.isEmpty) return 'Ҳадди ақал як сатр илова кунед';
+    if (_branchId.text.trim().isEmpty) return l.receiptValBranch;
+    if (_drafts.isEmpty) return l.receiptValAtLeastOneLine;
     for (var i = 0; i < _drafts.length; i++) {
-      final problem = _drafts[i].validate();
-      if (problem != null) return 'Сатри ${i + 1}: $problem';
+      final problem = _drafts[i].validate(l);
+      if (problem != null) return l.receiptValLine(i + 1, problem);
     }
     return null;
   }
 
   Future<void> _saveDraft() async {
-    final problem = _validate();
+    final l = AppLocalizations.of(context);
+    final problem = _validate(l);
     if (problem != null) {
       AppToast.error(context, problem);
       return;
@@ -171,42 +173,44 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
     final result = _isExisting
         ? await controller.update(receipt)
         : await controller.create(receipt);
-    _handleResult(result, successMessage: 'Приход ҳамчун лоиҳа нигоҳ дошта шуд');
+    _handleResult(result, successMessage: l.receiptSavedDraft);
   }
 
   Future<void> _post() async {
+    final l = AppLocalizations.of(context);
     // A brand-new receipt must be saved before it can be posted.
     if (!_isExisting || _loadedId == null) {
-      AppToast.error(context, 'Аввал приходро нигоҳ доред');
+      AppToast.error(context, l.receiptSaveFirst);
       return;
     }
     final confirmed = await _confirm(
-      title: 'Тасдиқи приход',
-      body: 'Приход тасдиқ карда шавад? Баъди тасдиқ бақия нав мешавад.',
-      confirmLabel: 'Тасдиқ',
+      title: l.receiptPostTitle,
+      body: l.receiptPostBody,
+      confirmLabel: l.commonConfirm,
     );
     if (confirmed != true) return;
     final result = await ref
         .read(receiptEditControllerProvider.notifier)
         .post(_loadedId!);
-    _handleResult(result, successMessage: 'Приход тасдиқ шуд');
+    _handleResult(result, successMessage: l.receiptPosted);
   }
 
   Future<void> _cancelReceipt() async {
+    final l = AppLocalizations.of(context);
     if (!_isExisting || _loadedId == null) {
       Navigator.of(context).pop();
       return;
     }
     final confirmed = await _confirm(
-      title: 'Бекор кардани приход',
-      body: 'Приход бекор карда шавад?',
-      confirmLabel: 'Бекор кардан',
+      title: l.receiptCancelTitle,
+      body: l.receiptCancelBody,
+      confirmLabel: l.receiptCancelConfirm,
     );
     if (confirmed != true) return;
     final result = await ref
         .read(receiptEditControllerProvider.notifier)
         .cancel(_loadedId!);
-    _handleResult(result, successMessage: 'Приход бекор шуд');
+    _handleResult(result, successMessage: l.receiptCancelled);
   }
 
   void _handleResult(
@@ -230,6 +234,7 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
     required String body,
     required String confirmLabel,
   }) {
+    final l = AppLocalizations.of(context);
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -238,7 +243,7 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Не'),
+            child: Text(l.commonNo),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -278,13 +283,14 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
       );
     }
 
+    final l = AppLocalizations.of(context);
     final isSaving = ref.watch(receiptEditControllerProvider);
     final busy = isSaving || _isLoadingExisting;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _isExisting ? 'Приход ${_number ?? ''}'.trim() : 'Приход нав',
+          _isExisting ? l.receiptEditTitle(_number ?? '').trim() : l.receiptNewTitle,
         ),
         actions: [
           if (_status != null) ...[
@@ -311,10 +317,11 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
   }
 
   Widget _buildBody(bool busy) {
+    final l = AppLocalizations.of(context);
     if (_loadError != null) {
       return EmptyState(
         icon: Icons.error_outline,
-        title: 'Хатогӣ',
+        title: l.commonError,
         message: _loadError!,
         action: FilledButton.tonalIcon(
           onPressed: () {
@@ -325,7 +332,7 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
             ref.invalidate(receiptDetailProvider(widget.receiptId!));
           },
           icon: const Icon(Icons.refresh),
-          label: const Text('Аз нав'),
+          label: Text(l.commonRetry),
         ),
       );
     }
@@ -351,7 +358,7 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
             child: Row(
               children: [
                 Text(
-                  'Сатрҳо (${_drafts.length})',
+                  l.receiptLinesCount(_drafts.length),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const Spacer(),
@@ -359,7 +366,7 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
                   FilledButton.tonalIcon(
                     onPressed: _addLine,
                     icon: const Icon(Icons.add),
-                    label: const Text('Илова сатр / скан штрих-код'),
+                    label: Text(l.receiptAddLine),
                   ),
               ],
             ),
@@ -384,12 +391,13 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
   }
 
   Widget _buildLines() {
+    final l = AppLocalizations.of(context);
     if (_drafts.isEmpty) {
       return EmptyState(
         icon: Icons.playlist_add,
         message: _isEditable
-            ? 'Сатр нест. «Илова сатр»-ро пахш кунед ё штрих-код скан кунед.'
-            : 'Дар ин приход сатр нест.',
+            ? l.receiptNoLinesEditable
+            : l.receiptNoLinesReadonly,
       );
     }
 
@@ -406,15 +414,15 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
         dataRowHeight: 56,
         dividerThickness: 1,
         showCheckboxColumn: false,
-        columns: const [
-          DataColumn2(label: Text('Дору'), size: ColumnSize.L),
-          DataColumn2(label: Text('Миқдор'), numeric: true, fixedWidth: 96),
-          DataColumn2(label: Text('Серия'), fixedWidth: 120),
-          DataColumn2(label: Text('Мӯҳлат'), fixedWidth: 132),
-          DataColumn2(label: Text('Нархи харид'), numeric: true, fixedWidth: 120),
-          DataColumn2(label: Text('Нархи фурӯш'), numeric: true, fixedWidth: 120),
-          DataColumn2(label: Text('Ҷамъ'), numeric: true, fixedWidth: 110),
-          DataColumn2(label: Text(''), fixedWidth: 48),
+        columns: [
+          DataColumn2(label: Text(l.receiptColDrug), size: ColumnSize.L),
+          DataColumn2(label: Text(l.receiptColQty), numeric: true, fixedWidth: 96),
+          DataColumn2(label: Text(l.receiptColSeries), fixedWidth: 120),
+          DataColumn2(label: Text(l.receiptColExpiry), fixedWidth: 132),
+          DataColumn2(label: Text(l.receiptColPurchasePrice), numeric: true, fixedWidth: 120),
+          DataColumn2(label: Text(l.receiptColSalePrice), numeric: true, fixedWidth: 120),
+          DataColumn2(label: Text(l.receiptColLineTotal), numeric: true, fixedWidth: 110),
+          const DataColumn2(label: Text(''), fixedWidth: 48),
         ],
         rows: [
           for (var i = 0; i < _drafts.length; i++)
@@ -425,6 +433,7 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
   }
 
   DataRow2 _buildLineRow(int index, _LineDraft draft) {
+    final l = AppLocalizations.of(context);
     final readOnly = !_isEditable;
     return DataRow2(
       specificRowHeight: 56,
@@ -479,7 +488,7 @@ class _ReceiptEditScreenState extends ConsumerState<ReceiptEditScreen> {
           readOnly
               ? const SizedBox.shrink()
               : IconButton(
-                  tooltip: 'Ҳазфи сатр',
+                  tooltip: l.receiptDeleteLine,
                   icon: const Icon(Icons.delete_outline, size: 18),
                   onPressed: () => _removeLine(index),
                 ),
@@ -556,14 +565,14 @@ class _LineDraft {
   double get lineTotal => _qty * _purchase;
 
   /// First validation problem for this line, or `null` when valid.
-  String? validate() {
+  String? validate(AppLocalizations l) {
     final qty = _parse(quantity.text);
-    if (qty == null || qty <= 0) return 'миқдори дуруст ворид кунед';
-    if (series.text.trim().isEmpty) return 'серияро ворид кунед';
+    if (qty == null || qty <= 0) return l.receiptValQty;
+    if (series.text.trim().isEmpty) return l.receiptValSeries;
     final purchase = _parse(purchasePrice.text);
-    if (purchase == null || purchase < 0) return 'нархи харидро ворид кунед';
+    if (purchase == null || purchase < 0) return l.receiptValPurchasePrice;
     final sale = _parse(salePrice.text);
-    if (sale == null || sale < 0) return 'нархи фурӯшро ворид кунед';
+    if (sale == null || sale < 0) return l.receiptValSalePrice;
     return null;
   }
 
@@ -704,6 +713,7 @@ class _Header extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Row(
@@ -712,7 +722,7 @@ class _Header extends ConsumerWidget {
           Expanded(
             flex: 2,
             child: EntityPicker(
-              label: 'Таъминкунанда',
+              label: l.receiptSupplier,
               icon: Icons.local_shipping_outlined,
               optionsProvider: (s) => supplierOptionsProvider(s),
               selectedId: supplierId,
@@ -726,10 +736,10 @@ class _Header extends ConsumerWidget {
             child: TextField(
               controller: branchId,
               enabled: editable,
-              decoration: const InputDecoration(
-                labelText: 'Филиал *',
-                prefixIcon: Icon(Icons.store_outlined),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l.receiptBranch,
+                prefixIcon: const Icon(Icons.store_outlined),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
             ),
@@ -737,14 +747,14 @@ class _Header extends ConsumerWidget {
           const SizedBox(width: 12),
           Expanded(
             child: InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Рақам',
-                prefixIcon: Icon(Icons.tag),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l.receiptNumber,
+                prefixIcon: const Icon(Icons.tag),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
               child: Text(
-                (number == null || number!.isEmpty) ? '— нав —' : number!,
+                (number == null || number!.isEmpty) ? l.receiptNumberNew : number!,
               ),
             ),
           ),
@@ -789,6 +799,7 @@ class _ActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final canCancel =
         isExisting && status != null && status != ReceiptStatus.cancelled;
@@ -805,12 +816,12 @@ class _ActionBar extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Ҷамъи харид: ${Formatters.money(total)}',
+                      l.receiptPurchaseTotal(Formatters.money(total)),
                       style: theme.textTheme.titleLarge,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'Сатрҳо: $lineCount',
+                      l.receiptLinesLabel(lineCount),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -823,7 +834,7 @@ class _ActionBar extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: busy ? null : onCancel,
                   icon: const Icon(Icons.cancel_outlined),
-                  label: const Text('Бекор'),
+                  label: Text(l.commonCancel),
                 ),
                 const SizedBox(width: 8),
               ],
@@ -831,19 +842,19 @@ class _ActionBar extends StatelessWidget {
                 FilledButton.tonalIcon(
                   onPressed: busy ? null : onSaveDraft,
                   icon: const Icon(Icons.save_outlined),
-                  label: const Text('Нигоҳ доштан (Лоиҳа)'),
+                  label: Text(l.receiptSaveDraftBtn),
                 ),
               if (editable && isExisting) ...[
                 const SizedBox(width: 8),
                 FilledButton.icon(
                   onPressed: busy ? null : onPost,
                   icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Тасдиқ'),
+                  label: Text(l.commonConfirm),
                 ),
               ],
               if (!editable && status != null)
                 Text(
-                  statusLabel(status!),
+                  statusLabel(l, status!),
                   style: theme.textTheme.titleMedium,
                 ),
             ],

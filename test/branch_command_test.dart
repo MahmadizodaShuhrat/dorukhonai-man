@@ -16,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
 
 class _NoTokenStorage implements TokenStorage {
   @override
@@ -119,7 +120,7 @@ void main() {
           ),
         ],
       );
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpWidget(localizedRouterApp(router));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('open'));

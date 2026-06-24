@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
 
 const _groups = [
   DrugGroup(id: 'g-1', name: 'Анальгетикҳо'),
@@ -24,8 +25,8 @@ Widget _host({String? selectedId, required ValueChanged<String?> onChanged}) {
         FakeReferenceRepository(drugGroupList: _groups),
       ),
     ],
-    child: MaterialApp(
-      home: Scaffold(
+    child: localizedApp(
+      Scaffold(
         body: EntityPicker(
           label: 'Гурӯҳ',
           optionsProvider: drugGroupOptionsProvider.call,
@@ -57,8 +58,8 @@ void main() {
             FakeReferenceRepository(drugGroupList: _groups),
           ),
         ],
-        child: MaterialApp(
-          home: Scaffold(
+        child: localizedApp(
+          Scaffold(
             body: StatefulBuilder(
               builder: (context, setState) => EntityPicker(
                 label: 'Гурӯҳ',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/entity_picker.dart';
 import '../../reference/presentation/reference_providers.dart';
 import '../data/product_models.dart';
@@ -85,9 +86,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         : await controller.create(product);
 
     if (!mounted) return;
+    final l = AppLocalizations.of(context);
     switch (result) {
       case ProductSaveSuccess():
-        _showSnack(_isEditing ? 'Дору навсозӣ шуд' : 'Дору сохта шуд');
+        _showSnack(_isEditing ? l.productUpdated : l.productCreated);
         Navigator.of(context).pop();
       case ProductSaveFailure(:final failure):
         _showSnack(failure.message, isError: true);
@@ -98,19 +100,20 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     final product = widget.product;
     if (product == null) return;
 
+    final l = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Ҳазфи дору'),
-        content: Text('«${product.name}» ҳазф карда шавад?'),
+        title: Text(l.productDeleteTitle),
+        content: Text(l.productDeleteBody(product.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Бекор'),
+            child: Text(l.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Ҳазф'),
+            child: Text(l.commonDelete),
           ),
         ],
       ),
@@ -120,9 +123,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     final result =
         await ref.read(productFormControllerProvider.notifier).delete(product.id);
     if (!mounted) return;
+    final l2 = AppLocalizations.of(context);
     switch (result) {
       case ProductSaveSuccess():
-        _showSnack('Дору ҳазф шуд');
+        _showSnack(l2.productDeleted);
         Navigator.of(context).pop();
       case ProductSaveFailure(:final failure):
         _showSnack(failure.message, isError: true);
@@ -142,15 +146,16 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final isSaving = ref.watch(productFormControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Таҳрири дору' : 'Дору нав'),
+        title: Text(_isEditing ? l.productEditTitle : l.productNewTitle),
         actions: [
           if (_isEditing)
             IconButton(
-              tooltip: 'Ҳазф',
+              tooltip: l.commonDelete,
               icon: const Icon(Icons.delete_outline),
               onPressed: isSaving ? null : _confirmDelete,
             ),
@@ -172,26 +177,26 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                       controller: _name,
                       autofocus: true,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Ном *',
-                        prefixIcon: Icon(Icons.medication),
+                      decoration: InputDecoration(
+                        labelText: l.productName,
+                        prefixIcon: const Icon(Icons.medication),
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Номи доруро ворид кунед'
+                          ? l.productValName
                           : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _barcode,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Штрих-код',
-                        prefixIcon: Icon(Icons.qr_code),
+                      decoration: InputDecoration(
+                        labelText: l.productBarcode,
+                        prefixIcon: const Icon(Icons.qr_code),
                       ),
                     ),
                     const SizedBox(height: 16),
                     EntityPicker(
-                      label: 'Гурӯҳи дору',
+                      label: l.productGroup,
                       icon: Icons.category_outlined,
                       optionsProvider: (s) => drugGroupOptionsProvider(s),
                       selectedId: _drugGroupId,
@@ -199,7 +204,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     EntityPicker(
-                      label: 'Истеҳсолкунанда',
+                      label: l.productManufacturer,
                       icon: Icons.factory_outlined,
                       optionsProvider: (s) => manufacturerOptionsProvider(s),
                       selectedId: _manufacturerId,
@@ -207,7 +212,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     EntityPicker(
-                      label: 'Воҳиди ченак',
+                      label: l.productUnit,
                       icon: Icons.straighten,
                       optionsProvider: (s) => unitOptionsProvider(s),
                       selectedId: _unitId,
@@ -215,13 +220,13 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     ),
                     const SizedBox(height: 8),
                     SwitchListTile(
-                      title: const Text('Доруи ретсептӣ'),
-                      subtitle: const Text('Фурӯш бо ретсепт'),
+                      title: Text(l.productRx),
+                      subtitle: Text(l.productRxSubtitle),
                       value: _rxRequired,
                       onChanged: (v) => setState(() => _rxRequired = v),
                     ),
                     SwitchListTile(
-                      title: const Text('Фаъол'),
+                      title: Text(l.productActiveLabel),
                       value: _isActive,
                       onChanged: (v) => setState(() => _isActive = v),
                     ),
@@ -235,7 +240,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.save),
-                      label: Text(_isEditing ? 'Нигоҳ доштан' : 'Сохтан'),
+                      label: Text(_isEditing ? l.commonSave : l.productCreate),
                     ),
                   ],
                 ),

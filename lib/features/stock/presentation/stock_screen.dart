@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/status_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/app_data_table.dart';
 import '../../../shared/app_scaffold.dart';
 import '../../../shared/status_chip.dart';
@@ -47,6 +48,7 @@ class StockScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final view = ref.watch(stockViewProvider);
     final selection = ref.watch(stockSelectionProvider);
 
@@ -54,15 +56,15 @@ class StockScreen extends ConsumerWidget {
     final subtitle = switch (view) {
       StockView.onHand => _countLabel(
         ref.watch(stockListControllerProvider).total,
-        'ададҳо',
+        l.stockUnitItems,
       ),
       StockView.expiring => _countLabel(
         ref.watch(expiringStockControllerProvider).total,
-        'мӯҳлаташ наздик',
+        l.stockUnitExpiring,
       ),
       StockView.low => _countLabel(
         ref.watch(lowStockControllerProvider).total,
-        'камшуда',
+        l.stockUnitLow,
       ),
     };
 
@@ -71,7 +73,7 @@ class StockScreen extends ConsumerWidget {
     // toasts raised from the detail panel.
     return Scaffold(
       body: AppScaffold(
-        title: 'Анбор',
+        title: l.stockTitle,
         icon: Icons.warehouse_outlined,
         subtitle: subtitle,
         padBody: false,
@@ -120,27 +122,28 @@ class _ViewTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return SegmentedButton<StockView>(
       showSelectedIcon: false,
       style: const ButtonStyle(
         visualDensity: VisualDensity.compact,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
-      segments: const [
+      segments: [
         ButtonSegment(
           value: StockView.onHand,
-          label: Text('Бақия'),
-          icon: Icon(Icons.inventory_2_outlined, size: 16),
+          label: Text(l.stockTabOnHand),
+          icon: const Icon(Icons.inventory_2_outlined, size: 16),
         ),
         ButtonSegment(
           value: StockView.expiring,
-          label: Text('Мӯҳлати наздик'),
-          icon: Icon(Icons.schedule_outlined, size: 16),
+          label: Text(l.stockTabExpiring),
+          icon: const Icon(Icons.schedule_outlined, size: 16),
         ),
         ButtonSegment(
           value: StockView.low,
-          label: Text('Камшуда'),
-          icon: Icon(Icons.trending_down, size: 16),
+          label: Text(l.stockTabLow),
+          icon: const Icon(Icons.trending_down, size: 16),
         ),
       ],
       selected: {view},
@@ -184,6 +187,7 @@ class _StockListTabState extends ConsumerState<_StockListTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final state = ref.watch(stockListControllerProvider);
     final controller = ref.read(stockListControllerProvider.notifier);
     final selectedId = ref.watch(stockSelectionProvider)?.productId;
@@ -205,15 +209,15 @@ class _StockListTabState extends ConsumerState<_StockListTab> {
                   ? state.failure!.message
                   : null,
               onRetry: controller.refresh,
-              emptyMessage: 'Бақия нест',
+              emptyMessage: l.stockEmptyOnHand,
               emptyIcon: Icons.warehouse_outlined,
-              columns: const [
-                DataColumn2(label: Text('Ном'), size: ColumnSize.L),
-                DataColumn2(label: Text('Штрих-код')),
-                DataColumn2(label: Text('Серия')),
-                DataColumn2(label: Text('Мӯҳлат')),
-                DataColumn2(label: Text('Бақия'), numeric: true),
-                DataColumn2(label: Text('Нарх'), numeric: true),
+              columns: [
+                DataColumn2(label: Text(l.stockColName), size: ColumnSize.L),
+                DataColumn2(label: Text(l.stockColBarcode)),
+                DataColumn2(label: Text(l.stockColSeries)),
+                DataColumn2(label: Text(l.stockColExpiry)),
+                DataColumn2(label: Text(l.stockColRemaining), numeric: true),
+                DataColumn2(label: Text(l.stockColPrice), numeric: true),
               ],
               rows: [
                 for (final item in state.items)
@@ -262,6 +266,7 @@ class _ExpiringTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final state = ref.watch(expiringStockControllerProvider);
     final controller = ref.read(expiringStockControllerProvider.notifier);
     final selectedId = ref.watch(stockSelectionProvider)?.productId;
@@ -279,10 +284,10 @@ class _ExpiringTab extends ConsumerWidget {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Text('Мӯҳлат:'),
+                    Text(l.stockExpiryLabel),
                     for (final d in const [30, 60, 90])
                       ChoiceChip(
-                        label: Text('$d рӯз'),
+                        label: Text(l.stockDaysOption(d)),
                         selected: controller.days == d,
                         onSelected: (_) => controller.setDays(d),
                       ),
@@ -305,14 +310,14 @@ class _ExpiringTab extends ConsumerWidget {
                   ? state.failure!.message
                   : null,
               onRetry: controller.refresh,
-              emptyMessage: 'Доруи мӯҳлаташ наздик нест',
+              emptyMessage: l.stockEmptyExpiring,
               emptyIcon: Icons.event_available_outlined,
-              columns: const [
-                DataColumn2(label: Text('Ном'), size: ColumnSize.L),
-                DataColumn2(label: Text('Серия')),
-                DataColumn2(label: Text('Мӯҳлат')),
-                DataColumn2(label: Text('Боқимонда (рӯз)'), numeric: true),
-                DataColumn2(label: Text('Бақия'), numeric: true),
+              columns: [
+                DataColumn2(label: Text(l.stockColName), size: ColumnSize.L),
+                DataColumn2(label: Text(l.stockColSeries)),
+                DataColumn2(label: Text(l.stockColExpiry)),
+                DataColumn2(label: Text(l.stockColRemainingDays), numeric: true),
+                DataColumn2(label: Text(l.stockColRemaining), numeric: true),
               ],
               rows: [
                 for (final item in state.items)
@@ -362,6 +367,7 @@ class _LowStockTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final state = ref.watch(lowStockControllerProvider);
     final controller = ref.read(lowStockControllerProvider.notifier);
     final selectedId = ref.watch(stockSelectionProvider)?.productId;
@@ -379,13 +385,13 @@ class _LowStockTab extends ConsumerWidget {
                   ? state.failure!.message
                   : null,
               onRetry: controller.refresh,
-              emptyMessage: 'Доруи камшуда нест',
+              emptyMessage: l.stockEmptyLow,
               emptyIcon: Icons.check_circle_outline,
-              columns: const [
-                DataColumn2(label: Text('Ном'), size: ColumnSize.L),
-                DataColumn2(label: Text('Бақияи ҷамъ'), numeric: true),
-                DataColumn2(label: Text('Минимум'), numeric: true),
-                DataColumn2(label: Text('Норасоӣ'), size: ColumnSize.L),
+              columns: [
+                DataColumn2(label: Text(l.stockColName), size: ColumnSize.L),
+                DataColumn2(label: Text(l.stockColTotalRemaining), numeric: true),
+                DataColumn2(label: Text(l.stockColMinimum), numeric: true),
+                DataColumn2(label: Text(l.stockColShortfall), size: ColumnSize.L),
               ],
               rows: [
                 for (final item in state.items)
@@ -430,6 +436,7 @@ class _FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: TextField(
@@ -437,7 +444,7 @@ class _FilterBar extends StatelessWidget {
         onChanged: onSearchChanged,
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-          hintText: 'Ҷустуҷӯ (ном ё штрих-код)…',
+          hintText: l.stockSearchHint,
           prefixIcon: const Icon(Icons.search),
           suffixIcon: searchController.text.isEmpty
               ? null
@@ -467,6 +474,7 @@ class _ExpiryCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final days = item.daysUntilExpiry();
     final (tone, _) = expiryTone(days);
     final color = _toneColor(context, tone);
@@ -484,7 +492,7 @@ class _ExpiryCell extends StatelessWidget {
       children: [
         Flexible(child: dateText),
         const SizedBox(width: 6),
-        StatusChip(label: expiryLabel(days), tone: tone, dense: true),
+        StatusChip(label: expiryLabel(l, days), tone: tone, dense: true),
       ],
     );
   }
@@ -543,13 +551,14 @@ class _ExpiryLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Wrap(
       spacing: 6,
       runSpacing: 6,
       alignment: WrapAlignment.end,
-      children: const [
-        StatusChip(label: '≤30 рӯз', tone: StatusTone.danger, dense: true),
-        StatusChip(label: '≤90 рӯз', tone: StatusTone.warn, dense: true),
+      children: [
+        StatusChip(label: l.stockLegendNear, tone: StatusTone.danger, dense: true),
+        StatusChip(label: l.stockLegendSoon, tone: StatusTone.warn, dense: true),
       ],
     );
   }
@@ -574,9 +583,9 @@ Widget _money(double value) => Text(
 }
 
 /// Short label for an expiry chip.
-String expiryLabel(int days) {
-  if (days < 0) return 'Гузашта';
-  return '$days р';
+String expiryLabel(AppLocalizations l, int days) {
+  if (days < 0) return l.stockExpired;
+  return l.stockExpiryDaysShort(days);
 }
 
 /// Soft row tint for the expiring table, transparent for healthy rows.
@@ -614,6 +623,7 @@ class _PaginationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -625,16 +635,16 @@ class _PaginationBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
-            Text('Ҳамагӣ: $total'),
+            Text(l.commonTotalCount(total)),
             const Spacer(),
             IconButton(
-              tooltip: 'Қаблӣ',
+              tooltip: l.commonPrevious,
               icon: const Icon(Icons.chevron_left),
               onPressed: hasPrevious && !isLoading ? onPrevious : null,
             ),
             Text('$page / $pageCount'),
             IconButton(
-              tooltip: 'Баъдӣ',
+              tooltip: l.commonNext,
               icon: const Icon(Icons.chevron_right),
               onPressed: hasNext && !isLoading ? onNext : null,
             ),

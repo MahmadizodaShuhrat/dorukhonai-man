@@ -3,21 +3,28 @@
 /// CONTRACT (camelCase) EXACTLY.
 library;
 
+import '../../../l10n/app_localizations.dart';
+
 /// Reason for a write-off (`POST /write-offs` → `reason`). Wire values are the
 /// exact contract strings.
 enum WriteOffReason {
-  expired('Expired', 'Мӯҳлат гузашта'),
-  damaged('Damaged', 'Вайроншуда'),
-  lost('Lost', 'Гумшуда'),
-  other('Other', 'Дигар');
+  expired('Expired'),
+  damaged('Damaged'),
+  lost('Lost'),
+  other('Other');
 
-  const WriteOffReason(this.wire, this.label);
+  const WriteOffReason(this.wire);
 
   /// Exact contract string sent to the API.
   final String wire;
 
-  /// Tajik label for the UI.
-  final String label;
+  /// Localized label for the UI.
+  String label(AppLocalizations l) => switch (this) {
+    WriteOffReason.expired => l.writeOffReasonExpired,
+    WriteOffReason.damaged => l.writeOffReasonDamaged,
+    WriteOffReason.lost => l.writeOffReasonLost,
+    WriteOffReason.other => l.writeOffReasonOther,
+  };
 
   static WriteOffReason fromWire(String? value) {
     for (final r in WriteOffReason.values) {

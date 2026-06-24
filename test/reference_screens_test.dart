@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'reference_support.dart';
 import 'support/fakes.dart';
+import 'support/l10n_harness.dart';
 
 /// A read-repo whose `manufacturers` query fails, to exercise the error state.
 class _FailingReferenceRepository extends FakeReferenceRepository {
@@ -34,7 +35,7 @@ Widget _host({
       referenceCrudRepositoryProvider.overrideWithValue(crud),
     ],
     // A Material host so AppScaffold/AppDataTable/SidePanel render.
-    child: MaterialApp(home: Scaffold(body: screen)),
+    child: localizedApp(Scaffold(body: screen)),
   );
 }
 

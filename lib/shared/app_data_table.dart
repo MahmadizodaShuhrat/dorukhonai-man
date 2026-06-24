@@ -1,6 +1,7 @@
 import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import 'empty_state.dart';
 import 'loading_state.dart';
 
@@ -20,7 +21,7 @@ class AppDataTable extends StatelessWidget {
     this.isLoading = false,
     this.errorMessage,
     this.onRetry,
-    this.emptyMessage = 'Маълумот нест',
+    this.emptyMessage,
     this.emptyIcon = Icons.inbox_outlined,
     this.sortColumnIndex,
     this.sortAscending = true,
@@ -36,32 +37,35 @@ class AppDataTable extends StatelessWidget {
   final bool isLoading;
   final String? errorMessage;
   final VoidCallback? onRetry;
-  final String emptyMessage;
+
+  /// Empty-state message; falls back to a localized "no data" when `null`.
+  final String? emptyMessage;
   final IconData emptyIcon;
   final int? sortColumnIndex;
   final bool sortAscending;
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     if (isLoading && rows.isEmpty) {
       return const LoadingState();
     }
     if (errorMessage != null) {
       return EmptyState(
         icon: Icons.error_outline,
-        title: 'Хатогӣ',
+        title: l.commonError,
         message: errorMessage!,
         action: onRetry == null
             ? null
             : FilledButton.tonalIcon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Аз нав'),
+                label: Text(l.commonRetry),
               ),
       );
     }
     if (rows.isEmpty) {
-      return EmptyState(icon: emptyIcon, message: emptyMessage);
+      return EmptyState(icon: emptyIcon, message: emptyMessage ?? l.commonNoData);
     }
 
     final theme = Theme.of(context);
