@@ -413,10 +413,10 @@ class _Brand extends StatelessWidget {
           if (!collapsed) ...[
             const SizedBox(width: 10),
             Text(
-              'DOROHONA',
+              'Dorukhona',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
-                letterSpacing: 1.0,
+                letterSpacing: 0.5,
                 color: theme.colorScheme.primary,
               ),
             ),
