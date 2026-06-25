@@ -210,7 +210,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).first, 'Такрорӣ');
     await tester.tap(find.widgetWithText(FilledButton, 'Сохтан'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(repo.createCalls, 1);
     expect(find.text('Ин ном аллакай мавҷуд аст.'), findsOneWidget);

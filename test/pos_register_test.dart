@@ -203,7 +203,8 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Пардохт (F9)'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.byType(PaymentDialog), findsNothing);
       expect(find.text('Сабад холӣ аст'), findsOneWidget);

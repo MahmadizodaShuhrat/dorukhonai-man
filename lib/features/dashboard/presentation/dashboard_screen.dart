@@ -730,6 +730,7 @@ class _SalesBarChart extends StatelessWidget {
     final theme = Theme.of(context);
     final l = AppLocalizations.of(context);
     final maxY = days.fold<double>(0, (m, d) => d.total > m ? d.total : m);
+    final chartMax = maxY <= 0 ? 1.0 : maxY * 1.25;
     final dow = [l.dowMon, l.dowTue, l.dowWed, l.dowThu, l.dowFri, l.dowSat, l.dowSun];
 
     return Padding(
@@ -737,15 +738,16 @@ class _SalesBarChart extends StatelessWidget {
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
-          maxY: maxY <= 0 ? 1 : maxY * 1.2,
+          maxY: chartMax,
           borderData: FlBorderData(show: false),
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
             horizontalInterval: maxY <= 0 ? 1 : maxY / 2,
             getDrawingHorizontalLine: (_) => FlLine(
-              color: theme.colorScheme.outlineVariant,
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
               strokeWidth: 1,
+              dashArray: const [4, 5],
             ),
           ),
           titlesData: FlTitlesData(
@@ -790,10 +792,25 @@ class _SalesBarChart extends StatelessWidget {
                 barRods: [
                   BarChartRodData(
                     toY: days[i].total,
-                    width: 18,
-                    color: theme.colorScheme.primary,
+                    width: 22,
                     borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(4),
+                      top: Radius.circular(7),
+                    ),
+                    // Modern vertical gradient (deep → light teal).
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.primary.withValues(alpha: 0.55),
+                      ],
+                    ),
+                    // Faint full-height track behind every bar so the chart
+                    // looks intentional even on zero-sale days.
+                    backDrawRodData: BackgroundBarChartRodData(
+                      show: true,
+                      toY: chartMax,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.06),
                     ),
                   ),
                 ],

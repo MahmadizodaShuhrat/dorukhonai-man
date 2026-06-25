@@ -48,7 +48,8 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Нигоҳ доштан (Лоиҳа)'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     // Supplier is the first missing field → its toast message shows.
     expect(find.text('Таъминкунандаро интихоб кунед'), findsOneWidget);
@@ -175,7 +176,8 @@ void main() {
 
     // Try to save → per-line validation fails and create is not called.
     await tester.tap(find.text('Нигоҳ доштан (Лоиҳа)'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.textContaining('миқдори дуруст'), findsOneWidget);
     expect(receipts.createCalls, 0);

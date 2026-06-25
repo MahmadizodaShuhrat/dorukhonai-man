@@ -209,9 +209,10 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Пардохт (F9)'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
-      // No payment dialog opened; an empty-cart snackbar showed instead.
+      // No payment dialog opened; an empty-cart toast showed instead.
       expect(find.byType(PaymentDialog), findsNothing);
       expect(find.text('Сабад холӣ аст'), findsOneWidget);
       expect(repo.createSaleCalls, 0);
